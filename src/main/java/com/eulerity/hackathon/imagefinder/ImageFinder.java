@@ -11,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+// annotating the servlet; defining attributes and routing 
 @WebServlet(
     name = "ImageFinder",
     urlPatterns = {"/main"}
@@ -18,6 +19,7 @@ import com.google.gson.GsonBuilder;
 public class ImageFinder extends HttpServlet{
 	private static final long serialVersionUID = 1L;
 
+	// object for serializing Java objects to JSON 
 	protected static final Gson GSON = new GsonBuilder().create();
 
 	//This is just a test array
@@ -30,10 +32,22 @@ public class ImageFinder extends HttpServlet{
 
 	@Override
 	protected final void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+		// 
 		resp.setContentType("text/json");
+		
+		/*
+		Returns the part of this request's URL that calls the servlet. This path 
+		starts with a "/" character and includes either the servlet name or a 
+		path to the servlet, but does not include any extra path information 
+		or a query string. 
+		*/
 		String path = req.getServletPath();
+
+		// what does this do?? 
 		String url = req.getParameter("url");
 		System.out.println("Got request of:" + path + " with query param:" + url);
+
+		// is this the line that prints out the images? 
 		resp.getWriter().print(GSON.toJson(testImages));
 	}
 }

@@ -1,0 +1,80 @@
+Maven
+- project management and comprehension tool
+
+- provides complete build lifecycle framework
+
+- automate build infrastructure
+
+- standard directory layout and default build cycle
+
+- creates reports, checks, build, testing automation setups
+    Builds
+    Documentation
+    Reporting
+    Dependencies
+    SCMs
+    Releases
+    Distribution
+    Mailing list
+
+- builds multiple projects together, publishes project info, deploys projects, shares JAR across several project
+
+- project structure and contents are declared in xml fil [pom.xml] 
+  -- maven creates default project structure
+  -- developers accurately place files; don't define config in pom
+  -- POM contains info about project, config details used by Maven,
+	goals, and plugins. Can also define the following: 
+	    project dependencies
+	    plugins
+	    goals
+	    build profiles
+	    project version
+	    developers
+	    mailing list
+  -- all POM inherits values form the base POM (super POM)
+  	-- so POM = super POM + project configuration
+  -- mvn help:effective-pom [command to see default config of super)
+  -- default project source folders, output directory, plugins
+	required, repos, reporting directory
+  -- not required to be written manually; archetypes exist for 
+	project creation
+
+- Maven Build Life Cycle
+	-- prepare-resources: resource copying
+	-- validate 	    : validating project, if all info. is ava.
+	-- compile	    : source code compilation
+	-- test		    : test compiled source code
+	-- package          : JAR/WAR package made acc. to POM.xml
+	-- install 	    : installs package in local/remote maven repo
+	-- deploy 	    : copies final package to remote repo
+
+- Three standard life cycles:
+	- clean
+	- default
+	- site
+
+- Goal: specific task that contributes to building and managing project
+
+
+* Java Servlet *
+
+- create a web application (resides at server side, generates dynamic web page)
+- is an API
+- is an interface needed to create itself
+- is a class that extends the capabilities of the servers and responds to incoming requests
+- deployed on server to create a dynamic web page 
+
+
+* Useful Links *
+
+@WebServlet // annotating // routing // of servlet : 
+	https://www.codejava.net/java-ee/servlet/webservlet-annotation-examples
+
+using gson
+	https://www.tutorialspoint.com/gson/gson_quick_guide.htm
+
+servlet methods (doPost, 
+	https://docs.oracle.com/javaee/7/api/javax/servlet/http/HttpServlet.html
+
+httpservlet (getServletPath, 
+	https://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html
