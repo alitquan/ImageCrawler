@@ -109,8 +109,6 @@
 		@param	method -- GET or POST 
 		@param  obj
 
-
-
 		*/
 		makeApiCall = function(url, method, obj, callback) {
 			// instantiates HTTP request
@@ -129,6 +127,9 @@
 			// will only send form data 
 			xhr.send
 					(obj ? 
+
+					// if object is form data, object will be returned 
+					
 					obj instanceof FormData || obj.constructor == String 
 						? 
 						obj : JSON.stringify(obj) 

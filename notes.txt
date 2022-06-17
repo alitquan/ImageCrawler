@@ -78,3 +78,7 @@ servlet methods (doPost,
 
 httpservlet (getServletPath, 
 	https://docs.oracle.com/javaee/6/api/javax/servlet/http/HttpServletRequest.html
+
+webcrawler
+	https://mkyong.com/java/jsoup-basic-web-crawler-example/
+
