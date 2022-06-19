@@ -34,6 +34,7 @@ public class WebCrawler {
     final static String resources_path = "resources/", 
                         xml_output = resources_path + "output.txt";
 
+
     /** 
      * @param   depth   how many subpages that you want to go through 
      * @param   url     URL address where crawler will be initiated
@@ -92,6 +93,9 @@ public class WebCrawler {
         }
     }
 
+
+
+
     /**
      * @param target        the string that you are looking for
      *                      it should always be the same thing. Will have to test
@@ -109,16 +113,24 @@ public class WebCrawler {
             String line; 
             int counter = 0;
 
-            while ((line = reader.readLine()) != null) { 
+            while ((line = reader.readLine()) != null) {  
+
                 // if line cannot possibly contain JSON, skip it
                 if (line.length() < target.length()) {
                     // debugging --- remove later
                     System.out.println(++counter);
                     continue;
                 } 
-                // return detected JSON line
+                
+                // return the post-script JSON for easier parsing
                 if (line.substring(0, target.length()).equals(target)) {
-                   return line; 
+                    String retVal = "";
+                    String unescape = line.replaceAll("\\\\"+"\"", "");
+                    String [] unescapeSplit = unescape.split(",");
+                    for (String s: unescapeSplit) {
+                        retVal+= "\n" + s; 
+                    }
+                    return retVal;
                 }
             }
   
@@ -141,10 +153,13 @@ public class WebCrawler {
     }
 
 
+
     // prints out the file 
     public String getTitle() {
         return doc.title(); 
     } 
+
+
 
     /** 
      * @param   selector    html-selector that you want to parse for
@@ -153,6 +168,8 @@ public class WebCrawler {
     public Elements getElements(String selector) {
         return doc.select(selector);
     }
+
+
 
     /*
     Gets all elements of a selected selctor via a Hashset
@@ -165,6 +182,8 @@ public class WebCrawler {
         }
         return links; 
     }
+
+
 
     /*
     Gets all elements of a selected selctor
