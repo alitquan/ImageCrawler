@@ -2,18 +2,14 @@ package com.eulerity.hackathon.imagefinder;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.FileReader;
 import java.util.ArrayList; 
 import java.util.HashSet;
-
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -33,18 +29,30 @@ public class WebCrawler {
     int depth; 
     Document doc;
     HashSet <String> links;
-    
-    
 
+    // resource folders. are cleaned out using pom.xml configuration
+    final static String resources_path = "resources/", 
+                        xml_output = resources_path + "output.txt";
 
     /** 
      * @param   depth   how many subpages that you want to go through 
      * @param   url     URL address where crawler will be initiated
      *                  ideally will be the home page
+     * 
+     * HTMLunit was actually designed for testing functionality and validity of 
+     * javascript code. It throws errors whenever something unoptimal is detected, 
+     * with respect to the efficacy of the JavaScript code. 
      */
     public WebCrawler(int depth, String url) throws Exception {
         this.depth = depth; 
         links = new HashSet <String> ();
+
+        // how to create dirs for testing
+        File theDir = new File(resources_path);
+        if (!theDir.exists()) {
+            theDir.mkdirs();
+        }
+
         
         try {
 
@@ -64,18 +72,16 @@ public class WebCrawler {
             // convert html to xml 
             doc = Jsoup.parse(myPage.asXml());
 
-            // prints out page as xml -- for testing
-            //System.out.println(myPage.asXml());
-
             // write the xml output to a file -- for debugging
-            File output = new File("output.txt");
+            File output = new File(xml_output);
             FileWriter writer = new FileWriter(output);
             writer.write(myPage.asXml());
+
+            // cleaning up resources
             writer.flush();
             writer.close();
 
-            // prints out html without tags -- for debugging
-            System.out.println(myPage.asText());
+            // getting data from the json that is loaded after javascript 
 
             // closes web client windows
             webclient.closeAllWindows();
@@ -85,6 +91,55 @@ public class WebCrawler {
 
         }
     }
+
+    /**
+     * @param target        the string that you are looking for
+     *                      it should always be the same thing. Will have to test
+     * @return              the String that contains all the JSON to be parsed
+     * 
+     * this is used because JSOUP, while it can be useful,  only loads the DOM prior 
+     * to the loading of the script. After all the JS is run on a dynamic webpage,
+     * the data is stored as a JSON file
+     */
+    public static String getPostDataJSON (String target) {
+        BufferedReader reader = null;  
+        try {
+
+            reader= new BufferedReader(new FileReader(xml_output));
+            String line; 
+            int counter = 0;
+
+            while ((line = reader.readLine()) != null) { 
+                // if line cannot possibly contain JSON, skip it
+                if (line.length() < target.length()) {
+                    // debugging --- remove later
+                    System.out.println(++counter);
+                    continue;
+                } 
+                // return detected JSON line
+                if (line.substring(0, target.length()).equals(target)) {
+                   return line; 
+                }
+            }
+  
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try { 
+                reader.close(); 
+            }
+            catch (IOException e) {
+                e.getStackTrace();
+            }   
+        }
+
+        // check the path specified by global variable xml_output for this error
+        return ("Target String was not detected"); 
+    }
+
 
     // prints out the file 
     public String getTitle() {

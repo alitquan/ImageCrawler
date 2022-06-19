@@ -1,5 +1,8 @@
 package com.eulerity.hackathon.imagefinder;
 import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import org.junit.Assert;
 import org.junit.Test;
@@ -59,13 +62,33 @@ public class WebCrawlerTest {
         assertTrue(true);
     }
 
-    //@Test
+    @Test
     public void selectorTest3() {
         System.out.println("Three");
-        ArrayList <String> retVal = test3.getElementsHashedAL("img", "src");
+        ArrayList <String> retVal = test3.getElementsHashedAL("link", "href");
+       // retVal.addAll(test3.getElementsHashedAL(selector, attr))
         for (String s: retVal) {
             System.out.println(s);
         }
         assertTrue(true);
+    }
+
+    @Test 
+    public void jsonFindTest() throws IOException{
+        System.out.println("\n\n===============JSON==================");
+        
+        // write the xml output to a file -- for debugging
+        File output = new File(WebCrawler.resources_path + "json_output.txt");
+        FileWriter writer = new FileWriter(output);
+
+        // moves the json portion of the text to the resource directory
+        writer.write(WebCrawler.getPostDataJSON("window.postDataJSON="));
+
+        // cleaning up resources
+        writer.flush();
+        writer.close();
+
+        assertTrue(true);
+
     }
 }
