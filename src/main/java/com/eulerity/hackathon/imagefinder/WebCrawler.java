@@ -224,7 +224,7 @@ public class WebCrawler {
                     // seperating links from attributes and other text
                     cleanURLs  = unclean_url.split(" ");
 
-                    // final cleaning of link
+                    // sanitizing malformed URLs
                     for (String s: cleanURLs) {
 
                         if (s.contains("/>")) {
@@ -341,10 +341,6 @@ public class WebCrawler {
             retArr[i++] = url;
         }
         return retArr;
-    }
-
-    private static void log(String msg, String... vals) {
-        System.out.println(String.format(msg, vals));
     }
     
 }

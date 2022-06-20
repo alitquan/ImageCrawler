@@ -74,7 +74,6 @@ public class ImageFinder extends HttpServlet{
 			//e.printStackTrace();
 		}
 
-		// is this the line that prints out the images? 
 		//resp.getWriter().print(GSON.toJson(testImages));
 		resp.getWriter().print(GSON.toJson(testLinks));
 	}
