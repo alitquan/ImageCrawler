@@ -76,18 +76,8 @@ public class WebCrawlerTest {
     @Test 
     public void jsonFindTest() throws IOException{
         System.out.println("\n\n===============JSON==================");
-        
-        // write the xml output to a file -- for debugging
-        File output = new File(WebCrawler.resources_path + "json_output.txt");
-        FileWriter writer = new FileWriter(output);
-
-        // moves the json portion of the text to the resource directory
-        writer.write(WebCrawler.getPostDataJSON("window.postDataJSON="));
-
-        // cleaning up resources
-        writer.flush();
-        writer.close();
-
+        test3.writeJSON();
+        test3.printPhotoURLs();
         assertTrue(true);
 
     }

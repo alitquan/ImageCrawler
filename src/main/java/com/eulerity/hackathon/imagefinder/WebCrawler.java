@@ -29,10 +29,12 @@ public class WebCrawler {
     int depth; 
     Document doc;
     HashSet <String> links;
+    ArrayList <String> _links;
 
     // resource folders. are cleaned out using pom.xml configuration
     final static String resources_path = "resources/", 
-                        xml_output = resources_path + "output.txt";
+                        xml_output     = resources_path + "output.txt",
+                        json_output    = resources_path + "json_output.txt";
 
 
     /** 
@@ -47,6 +49,7 @@ public class WebCrawler {
     public WebCrawler(int depth, String url) throws Exception {
         this.depth = depth; 
         links = new HashSet <String> ();
+        _links = new ArrayList<String>();
 
         // how to create dirs for testing
         File theDir = new File(resources_path);
@@ -92,8 +95,7 @@ public class WebCrawler {
 
         }
     }
-
-
+    
 
 
     /**
@@ -105,13 +107,14 @@ public class WebCrawler {
      * to the loading of the script. After all the JS is run on a dynamic webpage,
      * the data is stored as a JSON file
      */
-    public static String getPostDataJSON (String target) {
+    public String getPostDataJSON (String target) {
         BufferedReader reader = null;  
         try {
 
             reader= new BufferedReader(new FileReader(xml_output));
-            String line; 
+            String line, key, value;
             int counter = 0;
+            String[] json_object = new String [2]; 
 
             while ((line = reader.readLine()) != null) {  
 
@@ -128,7 +131,13 @@ public class WebCrawler {
                     String unescape = line.replaceAll("\\\\"+"\"", "");
                     String [] unescapeSplit = unescape.split(",");
                     for (String s: unescapeSplit) {
-                        retVal+= "\n" + s; 
+                        retVal+= "\n" + s;
+                        
+                        if (s.contains(":") & s.contains("url")) {
+                            key = s.substring(0, s.indexOf(":"));
+                            value = s.substring(s.indexOf(":")+1, s.length());
+                            _links.add(value);
+                        }
                     }
                     return retVal;
                 }
@@ -151,6 +160,22 @@ public class WebCrawler {
         // check the path specified by global variable xml_output for this error
         return ("Target String was not detected"); 
     }
+
+
+
+    public void writeJSON() throws IOException {
+        // write the xml output to a file -- for debugging
+        File output = new File(json_output);
+        FileWriter writer = new FileWriter(output);
+
+        // moves the json portion of the text to the resource directory
+        writer.write(getPostDataJSON("window.postDataJSON="));
+
+        // cleaning up resources
+        writer.flush();
+        writer.close();
+    }
+    
 
 
 
@@ -198,7 +223,12 @@ public class WebCrawler {
     }
    
     
-    
+   public void printPhotoURLs() {
+       System.out.println("Printing out photo urls: ");
+       for (String s: _links) {
+           System.out.println(s);
+       }
+   } 
 
     private static void log(String msg, String... vals) {
         System.out.println(String.format(msg, vals));
