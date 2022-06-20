@@ -21,6 +21,8 @@ public class WebCrawlerTest {
     @Before 
     public void setUp() throws Exception{
         testInstance  = new WebCrawler(1, "https://richardbernabe.com/blog/");
+
+        // test for webcrawling -- this one doesn't generate photos but has lots of links
         testInstance2 = new WebCrawler(1, "https://imgur.com/user/bessity/posts"); 
         test3 = new WebCrawler(1, "https://imgur.com/gallery/BrgX9vM");
 
@@ -89,6 +91,7 @@ public class WebCrawlerTest {
     public void urlReturn() throws IOException {
         test5.getAllImageURLs();
         String [] testArr = test5.retURLsAsArrays();
+        System.out.println(test5.hostname);
         Assert.assertEquals(testArr.length, test5.getLinksLength());
     }
 }

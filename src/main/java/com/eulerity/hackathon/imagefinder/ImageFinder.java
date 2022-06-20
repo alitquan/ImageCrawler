@@ -52,6 +52,7 @@ public class ImageFinder extends HttpServlet{
 		// 
 		resp.setContentType("text/json");
 		
+		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF); 
 		/*
 		Returns the part of this request's URL that calls the servlet. This path 
 		starts with a "/" character and includes either the servlet name or a 

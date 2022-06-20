@@ -1,15 +1,14 @@
 package com.eulerity.hackathon.imagefinder;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.FileReader;
 import java.util.ArrayList; 
 import java.util.HashSet;
+
+import java.net.URI;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -26,10 +25,12 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 
 public class WebCrawler {
+    String hostname; 
     int depth; 
     Document doc;
     HashSet <String> links;             // image links
-    HashSet <String> extraLinks;        // css, js, relative paths 
+    HashSet <String> extraLinks;        // css, js, relative paths
+    HashSet <String> subpages;  
     ArrayList <String> _links;
 
     // resource folders. are cleaned out using pom.xml configuration
@@ -52,6 +53,8 @@ public class WebCrawler {
         links = new HashSet <String> ();
         extraLinks = new HashSet <String> ();
         _links = new ArrayList<String>();
+        hostname = new URI(url).getHost();
+        hostname = hostname.startsWith("www.") ? hostname.substring(4) : hostname;  
 
         // how to create dirs for testing
         File theDir = new File(resources_path);
@@ -138,7 +141,7 @@ public class WebCrawler {
                         if (s.contains(":") & s.contains("url")) {
                             key = s.substring(0, s.indexOf(":"));
                             value = s.substring(s.indexOf(":")+1, s.length());
-                            if (value.contains("http")){
+                            if (value.contains(hostname) && value.contains("http")){
                                 System.out.println("Legible value: " + value);
                                 links.add(value.substring(value.indexOf("http")));
                             }
@@ -211,7 +214,7 @@ public class WebCrawler {
         for (Element e: elements) {
             String _attribute= e.attr(attribute);
             if (selector.equals("img")) { 
-                if (_attribute.contains("https:")) {
+                if (_attribute.contains("http") && _attribute.contains(hostname)) {
                     System.out.println(_attribute);
                     links.add(_attribute); 
                 }
@@ -219,7 +222,9 @@ public class WebCrawler {
                     extraLinks.add(_attribute);
                 }
             }
-           
+            if (selector.equals("a")) {
+
+            }
         }
         return links; 
     }
