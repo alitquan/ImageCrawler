@@ -25,13 +25,12 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 
 public class WebCrawler {
-    String hostname; 
+    String hostname,domain; 
     int depth; 
     Document doc;
     HashSet <String> links;             // image links
     HashSet <String> extraLinks;        // css, js, relative paths
     HashSet <String> subpages;  
-    ArrayList <String> _links;
 
     // resource folders. are cleaned out using pom.xml configuration
     final static String resources_path = "resources/", 
@@ -52,9 +51,10 @@ public class WebCrawler {
         this.depth = depth; 
         links = new HashSet <String> ();
         extraLinks = new HashSet <String> ();
-        _links = new ArrayList<String>();
-        hostname = new URI(url).getHost();
-        hostname = hostname.startsWith("www.") ? hostname.substring(4) : hostname;  
+        subpages = new HashSet<String>();
+        URI uri = new URI(url);
+        domain = uri.getScheme() + "://" + uri.getHost();
+        hostname = domain.startsWith("www.") ? domain.substring(4) : domain;  
 
         // how to create dirs for testing
         File theDir = new File(resources_path);
@@ -203,14 +203,73 @@ public class WebCrawler {
         return doc.select(selector);
     }
 
+    public void bruteForceLinkSearch() {
+
+        String target = "https://",
+                        unclean_url,
+                        line;
+        String [] cleanURLs = new String []{};
+
+        BufferedReader reader = null;  
+        try {
+
+            reader= new BufferedReader(new FileReader(xml_output));
+
+            while ((line = reader.readLine()) != null) { 
+                
+                // looks for links that are not referred to by the <a> tag
+                if(line.contains(target) & !subpages.contains(line)) {
+                    // gets the whole line starting from "https://"
+                    unclean_url= line.substring(line.indexOf(target));
+                    // seperating links from attributes and other text
+                    cleanURLs  = unclean_url.split(" ");
+
+                    // final cleaning of link
+                    for (String s: cleanURLs) {
+
+                        if (s.contains("/>")) {
+                            s = s.replace("/>","");
+                        }
+                        else if (s.contains ("\">")){
+                            s = s.replace ("\">"," ");
+                        }
+                        if (s.contains (target)) {
+                            links.add(s.substring(s.indexOf(target)));
+                        }
+                    }
+
+                }
+           
+            }
+  
+
+        } 
+        catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } 
+        catch (IOException e) {
+            e.printStackTrace();
+        } 
+        finally {
+            try { 
+                reader.close(); 
+            }
+            catch (IOException e) {
+                e.getStackTrace();
+            }   
+        }
+
+
+    }
 
 
     /*
     Gets all elements of a selected selctor via a Hashset
     Need to actually implement 
     */
-    public HashSet <String> getElementsHashed (String selector, String attribute) {
+    public void getElementsHashed (String selector, String attribute) {
         Elements elements = doc.select (selector);
+        if (elements.isEmpty()) return;
         for (Element e: elements) {
             String _attribute= e.attr(attribute);
             if (selector.equals("img")) { 
@@ -222,46 +281,55 @@ public class WebCrawler {
                     extraLinks.add(_attribute);
                 }
             }
-            if (selector.equals("a")) {
+
+            // getting subpages --- only relative paths with no php scripts 
+            else if (selector.equals("a") ) {
+               
+                // links with same domain added are counted as subpages
+                if (_attribute.contains(domain)) {
+                    subpages.add(_attribute);
+                }
+                
+                // relative paths are converted to absolute
+                else if (!_attribute.contains("http") &
+                    _attribute.length() > 1 &&
+                    _attribute.charAt(0) == '/' &
+                   !_attribute.contains("php?") ){
+
+
+                        subpages.add(domain+_attribute);
+                }
+                
+            }
+      
+            // <meta property="og:image" content= ... > 
+            else if (selector.equals("meta")) {
+                if (e.attr("property").equals("og:image"))
+                    links.add(_attribute);
 
             }
         }
-        return links; 
     }
 
-
-
-    /*
-    Gets all elements of a selected selctor
-    */
-    public ArrayList <String> getElementsHashedAL (String selector, String attr) {
-        Elements elements = doc.select (selector);
-        ArrayList <String> linksAL = new ArrayList<String>();
-        for (Element e: elements) {
-            linksAL.add(e.attr(attr));
-        }
-        return linksAL; 
-    }
-
+    
 
     public void getAllImageURLs() throws IOException {
         writeJSON();
         // could be logos
-        getElementsHashed("link", "href");
         System.out.println("==============Image URLS==============");
-        System.out.println (getElementsHashed("img", "src").toString());
+        getElementsHashed("img", "src");
+        getElementsHashed("meta", "content");
+        bruteForceLinkSearch();
+        System.out.println (links.toString());
         System.out.println("==============MISC==============");
+        getElementsHashed("link", "href"); // needs to implement this 
         System.out.println (extraLinks.toString());
+        getElementsHashed("a", "href");
+        System.out.println ("\n\n=============SUBPAGES===========" + subpages.toString());
         // needs to clean out css and js files, relative pathjs
+        
     }
     
-    public void printPhotoURLs() {
-        System.out.println("Printing out photo urls: ");
-        for (String s: _links) {
-            System.out.println(s);
-        }
-    }
-
     public int getLinksLength() {
         return links.size();
     }
