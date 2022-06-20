@@ -123,7 +123,7 @@ public class WebCrawler {
                 // if line cannot possibly contain JSON, skip it
                 if (line.length() < target.length()) {
                     // debugging --- remove later
-                    System.out.println(++counter);
+                    //System.out.println(++counter);
                     continue;
                 } 
                 
@@ -138,7 +138,12 @@ public class WebCrawler {
                         if (s.contains(":") & s.contains("url")) {
                             key = s.substring(0, s.indexOf(":"));
                             value = s.substring(s.indexOf(":")+1, s.length());
-                            links.add(value);
+                            if (value.contains("http")){
+                                System.out.println("Legible value: " + value);
+                                links.add(value.substring(value.indexOf("http")));
+                            }
+                            
+                            //links.add(value.substring(s.indexOf("http"),s.length()));
                         }
                     }
                 }
@@ -162,8 +167,6 @@ public class WebCrawler {
         // check the path specified by global variable xml_output for this error
         return ("Target String was not detected"); 
     }
-
-
 
     public void writeJSON() throws IOException {
         // write the xml output to a file -- for debugging
@@ -237,7 +240,7 @@ public class WebCrawler {
 
 
     public void getAllImageURLs() throws IOException {
-        //writeJSON();
+        writeJSON();
         // could be logos
         getElementsHashed("link", "href");
         System.out.println("==============Image URLS==============");
