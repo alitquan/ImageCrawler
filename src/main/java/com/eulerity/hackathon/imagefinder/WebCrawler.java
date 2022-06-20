@@ -114,7 +114,6 @@ public class WebCrawler {
             reader= new BufferedReader(new FileReader(xml_output));
             String line, key, value;
             int counter = 0;
-            String[] json_object = new String [2]; 
 
             while ((line = reader.readLine()) != null) {  
 
@@ -132,11 +131,12 @@ public class WebCrawler {
                     String [] unescapeSplit = unescape.split(",");
                     for (String s: unescapeSplit) {
                         retVal+= "\n" + s;
-                        
+                       
+                        // breaks up JSON records and stores urls, which contain images
                         if (s.contains(":") & s.contains("url")) {
                             key = s.substring(0, s.indexOf(":"));
                             value = s.substring(s.indexOf(":")+1, s.length());
-                            _links.add(value);
+                            links.add(value);
                         }
                     }
                     return retVal;
@@ -169,6 +169,7 @@ public class WebCrawler {
         FileWriter writer = new FileWriter(output);
 
         // moves the json portion of the text to the resource directory
+        // using example 4, see if finding the 'window.' serves as locating line 
         writer.write(getPostDataJSON("window.postDataJSON="));
 
         // cleaning up resources
@@ -221,7 +222,15 @@ public class WebCrawler {
         }
         return linksAL; 
     }
-   
+
+
+    public void getAllImageURLs() throws IOException {
+        writeJSON();
+        // could be logos
+        getElementsHashed("link", "href");
+        System.out.println (getElementsHashed("img", "src").toString());
+        // needs to clean out css and js files, relative pathjs
+    }
     
    public void printPhotoURLs() {
        System.out.println("Printing out photo urls: ");

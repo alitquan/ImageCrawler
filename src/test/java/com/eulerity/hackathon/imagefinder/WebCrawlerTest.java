@@ -15,7 +15,7 @@ import org.jsoup.select.Elements;
 import java.util.*;
 
 public class WebCrawlerTest {
-    WebCrawler testInstance, testInstance2, test3;
+    WebCrawler testInstance, testInstance2, test3,test4,test5;
 
     // using a blog 
     @Before 
@@ -23,6 +23,10 @@ public class WebCrawlerTest {
         testInstance  = new WebCrawler(1, "https://richardbernabe.com/blog/");
         testInstance2 = new WebCrawler(1, "https://imgur.com/user/bessity/posts"); 
         test3 = new WebCrawler(1, "https://imgur.com/gallery/BrgX9vM");
+
+        // problem is that your method only works for a specific page in imgur
+        test4 = new WebCrawler(4, "https://unsplash.com/photos/fIq0tET6llw");
+        test5 = new WebCrawler(1, "https://www.istockphoto.com/photos/bangladesh");
     }
     
     @Test
@@ -62,7 +66,7 @@ public class WebCrawlerTest {
         assertTrue(true);
     }
 
-    @Test
+    //@Test
     public void selectorTest3() {
         System.out.println("Three");
         ArrayList <String> retVal = test3.getElementsHashedAL("link", "href");
@@ -73,12 +77,16 @@ public class WebCrawlerTest {
         assertTrue(true);
     }
 
-    @Test 
+    //@Test 
     public void jsonFindTest() throws IOException{
         System.out.println("\n\n===============JSON==================");
         test3.writeJSON();
         test3.printPhotoURLs();
         assertTrue(true);
+    }
 
+    @Test
+    public void urlReturn() throws IOException {
+        test5.getAllImageURLs();
     }
 }
