@@ -28,7 +28,8 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 public class WebCrawler {
     int depth; 
     Document doc;
-    HashSet <String> links;
+    HashSet <String> links;             // image links
+    HashSet <String> extraLinks;        // css, js, relative paths 
     ArrayList <String> _links;
 
     // resource folders. are cleaned out using pom.xml configuration
@@ -49,6 +50,7 @@ public class WebCrawler {
     public WebCrawler(int depth, String url) throws Exception {
         this.depth = depth; 
         links = new HashSet <String> ();
+        extraLinks = new HashSet <String> ();
         _links = new ArrayList<String>();
 
         // how to create dirs for testing
@@ -107,12 +109,13 @@ public class WebCrawler {
      * to the loading of the script. After all the JS is run on a dynamic webpage,
      * the data is stored as a JSON file
      */
-    public String getPostDataJSON (String target) {
+    public String getPostDataJSON () {
+        String target = "window."; // commonly indicates json length
         BufferedReader reader = null;  
         try {
 
             reader= new BufferedReader(new FileReader(xml_output));
-            String line, key, value;
+            String line, key, value,retVal="";
             int counter = 0;
 
             while ((line = reader.readLine()) != null) {  
@@ -125,8 +128,7 @@ public class WebCrawler {
                 } 
                 
                 // return the post-script JSON for easier parsing
-                if (line.substring(0, target.length()).equals(target)) {
-                    String retVal = "";
+                if (line.substring(0, target.length()).equals(target) && line.length() > 5000) {
                     String unescape = line.replaceAll("\\\\"+"\"", "");
                     String [] unescapeSplit = unescape.split(",");
                     for (String s: unescapeSplit) {
@@ -139,9 +141,9 @@ public class WebCrawler {
                             links.add(value);
                         }
                     }
-                    return retVal;
                 }
             }
+            return retVal;
   
 
         } catch (FileNotFoundException e) {
@@ -170,7 +172,7 @@ public class WebCrawler {
 
         // moves the json portion of the text to the resource directory
         // using example 4, see if finding the 'window.' serves as locating line 
-        writer.write(getPostDataJSON("window.postDataJSON="));
+        writer.write(getPostDataJSON());
 
         // cleaning up resources
         writer.flush();
@@ -201,10 +203,20 @@ public class WebCrawler {
     Gets all elements of a selected selctor via a Hashset
     Need to actually implement 
     */
-    public HashSet <String> getElementsHashed (String selector, String attr) {
+    public HashSet <String> getElementsHashed (String selector, String attribute) {
         Elements elements = doc.select (selector);
         for (Element e: elements) {
-            links.add(e.attr(attr));
+            String _attribute= e.attr(attribute);
+            if (selector.equals("img")) { 
+                if (_attribute.contains("https:")) {
+                    System.out.println(_attribute);
+                    links.add(_attribute); 
+                }
+                else {
+                    extraLinks.add(_attribute);
+                }
+            }
+           
         }
         return links; 
     }
@@ -225,19 +237,31 @@ public class WebCrawler {
 
 
     public void getAllImageURLs() throws IOException {
-        writeJSON();
+        //writeJSON();
         // could be logos
         getElementsHashed("link", "href");
+        System.out.println("==============Image URLS==============");
         System.out.println (getElementsHashed("img", "src").toString());
+        System.out.println("==============MISC==============");
+        System.out.println (extraLinks.toString());
         // needs to clean out css and js files, relative pathjs
     }
     
-   public void printPhotoURLs() {
-       System.out.println("Printing out photo urls: ");
-       for (String s: _links) {
-           System.out.println(s);
-       }
-   } 
+    public void printPhotoURLs() {
+        System.out.println("Printing out photo urls: ");
+        for (String s: _links) {
+            System.out.println(s);
+        }
+    }
+
+    public String [] retURLsAsArrays() {
+        String retArr[] = new String [links.size()];
+        int i = 0;
+        for (String url: links) {
+            retArr[i++] = url;
+        }
+        return retArr;
+    }
 
     private static void log(String msg, String... vals) {
         System.out.println(String.format(msg, vals));
