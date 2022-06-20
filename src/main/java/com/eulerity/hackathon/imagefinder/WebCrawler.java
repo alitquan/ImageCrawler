@@ -254,6 +254,10 @@ public class WebCrawler {
         }
     }
 
+    public int getLinksLength() {
+        return links.size();
+    }
+
     public String [] retURLsAsArrays() {
         String retArr[] = new String [links.size()];
         int i = 0;

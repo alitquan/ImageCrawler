@@ -88,5 +88,7 @@ public class WebCrawlerTest {
     @Test
     public void urlReturn() throws IOException {
         test5.getAllImageURLs();
+        String [] testArr = test5.retURLsAsArrays();
+        Assert.assertEquals(testArr.length, test5.getLinksLength());
     }
 }

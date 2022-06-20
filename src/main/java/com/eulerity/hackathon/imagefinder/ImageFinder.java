@@ -43,14 +43,10 @@ public class ImageFinder extends HttpServlet{
 			"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Stephen_Curry_Shooting_%28cropped%29_%28cropped%29.jpg/800px-Stephen_Curry_Shooting_%28cropped%29_%28cropped%29.jpg"
 	};
 
-	/*
-	public static void returnLinks(String main_url) throws IOException {
-		crawler = new WebCrawler(5, main_url);
-		crawler.getElementsHashed(main_url);
+	public static String[] testLinks = {};
 
-	}
-	*/
-	
+
+
 	@Override
 	protected final void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		// 
@@ -68,8 +64,17 @@ public class ImageFinder extends HttpServlet{
 		String url = req.getParameter("url");
 		System.out.println("Got request of:" + path + " with query param:" + url);
 
+		try {
+			WebCrawler crawler = new WebCrawler(1, url);
+			crawler.getAllImageURLs();
+			testLinks = crawler.retURLsAsArrays();
+		}
+		catch (Exception e) {
+			//e.printStackTrace();
+		}
+
 		// is this the line that prints out the images? 
 		//resp.getWriter().print(GSON.toJson(testImages));
-		resp.getWriter().print(GSON.toJson(quanTest));
+		resp.getWriter().print(GSON.toJson(testLinks));
 	}
 }
