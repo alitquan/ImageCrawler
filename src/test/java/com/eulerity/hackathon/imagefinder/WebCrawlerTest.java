@@ -32,6 +32,7 @@ public class WebCrawlerTest  {
         // https://en.wikipedia.org/wiki/Gustavo_Petro
         // https://alltogether.swe.org/about-all-together/
         // https://iamafoodblog.com/ 
+        // https://pinchofyum.com/    
     }
     
     //@Test

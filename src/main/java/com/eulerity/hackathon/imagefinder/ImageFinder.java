@@ -15,6 +15,11 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 // annotating the servlet; defining attributes and routing 
 @WebServlet(
     name = "ImageFinder",
@@ -35,46 +40,69 @@ public class ImageFinder extends HttpServlet{
 			"https://images.pexels.com/photos/406014/pexels-photo-406014.jpeg?auto=compress&format=tiny",
 			"https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&format=tiny"
     };
-
-	public static final String[] quanTest = {
-			// hotlinking 
-			"https://richardbernabe.com/wp-content/uploads/2021/05/elephant_logo_thin.png",
-			"https://i.imgur.com/xpBAKXQ.jpeg",
-			"https://upload.wikimedia.org/wikipedia/commons/thumb/7/7f/Stephen_Curry_Shooting_%28cropped%29_%28cropped%29.jpg/800px-Stephen_Curry_Shooting_%28cropped%29_%28cropped%29.jpg"
-	};
-
-	public static String[] testLinks = {};
+	
+	public static String[] imageLinks = {};
+	public static String[] subpageLinks = {};
 
 
 
 	@Override
 	protected final void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		// 
+		
 		resp.setContentType("text/json");
 		
 		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF); 
-		/*
-		Returns the part of this request's URL that calls the servlet. This path 
-		starts with a "/" character and includes either the servlet name or a 
-		path to the servlet, but does not include any extra path information 
-		or a query string. 
-		*/
 		String path = req.getServletPath();
 
-		// what does this do?? 
 		String url = req.getParameter("url");
+		WebCrawler crawler;
+
+		int maxThreads = 2;
 		System.out.println("Got request of:" + path + " with query param:" + url);
 
 		try {
-			WebCrawler crawler = new WebCrawler(url,false);
+			crawler = new WebCrawler(url,false);
 			crawler.getAllImageURLs();
-			testLinks = crawler.retURLsAsArrays();
+			imageLinks  = crawler.retURLsAsArrays();
+			subpageLinks = crawler.retSubPagesAsArrays();
+
+
+			// array of ordered numbers  
+			ArrayList<Integer> randomized = new ArrayList<>();
+
+			for (int i = 0; i < subpageLinks.length; i++) {
+				randomized.add(i);
+			}
+			
+			// array is now randomized
+			Collections.shuffle(randomized);
+			
+			ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
+
+			for (int i = 0; i < maxThreads; i++) {
+				
+				// create a thread using randomized subpage
+				String subpage = subpageLinks[randomized.remove(0)].replaceAll("\"", "");
+				Runnable worker = crawler.retSubPageCrawler(subpage);
+				
+				executor.execute(worker);
+			}
+		
+			executor.shutdown();
+			
+			while (!executor.isTerminated()) {
+			}
+
+			System.out.println("\nFinished all threads");
+			executor.shutdownNow();
+			imageLinks = crawler.retURLsAsArrays();
+
 		}
 		catch (Exception e) {
 			//e.printStackTrace();
 		}
 
-		//resp.getWriter().print(GSON.toJson(testImages));
-		resp.getWriter().print(GSON.toJson(testLinks));
+		resp.getWriter().print(GSON.toJson(imageLinks));
+		
 	}
 }

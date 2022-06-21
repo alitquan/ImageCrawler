@@ -25,7 +25,7 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 
 public class WebCrawler implements Runnable {
-    String hostname,domain;
+    String hostname,domain,url;
     boolean thread;
     Document doc;
     static HashSet <String> links;             // image links
@@ -48,9 +48,12 @@ public class WebCrawler implements Runnable {
      * javascript code. It throws errors whenever something unoptimal is detected, 
      * with respect to the efficacy of the JavaScript code. 
      */
-    public WebCrawler(String url, boolean is_thread) throws Exception {
+    public WebCrawler(String _url, boolean is_thread) throws Exception {
+        this.url = _url; 
         this.thread = is_thread;
-        links = new HashSet <String> ();
+        if (links == null) {
+            links = new HashSet<String>();
+        }
         extraLinks = new HashSet <String> ();
         subpages = new HashSet<String>();
         URI uri = new URI(url);
@@ -116,7 +119,11 @@ public class WebCrawler implements Runnable {
         }
 
     }
-        
+    
+    
+    public void reset() {
+        links = new HashSet<>(); 
+    }
 
 
 
@@ -177,14 +184,63 @@ public class WebCrawler implements Runnable {
 
     }
 
+    public String [] retSubPagesAsArrays() {
+
+        String retArr[] = new String [subpages.size()];
+        int i = 0;
+        for (String url: subpages) {
+            retArr[i++] = url;
+        }
+        return retArr;
+    }
 
 
-    public void run() {
-        if (! thread) return;
-        getElementsHashed("img", "src");
-        getElementsHashed("meta", "content");
-        bruteForceLinkSearch();
-        return;
+    // replaces illegal url characters in string s
+    public String urlSanitize(String s) {
+
+        if (s.contains("/>")) {
+            s = s.replace("/>","");
+        }
+        if (s.contains ("\">")){
+            s = s.replace ("\">","");
+        }
+        if (s.contains("\"")) {
+            s = s.replace ("\"","");
+        }
+        if (s.contains("{")) {
+            s = s.replace ("{","");
+        }
+        if (s.contains("}")) {
+            s = s.replace ("}","");
+        }
+        return s; 
+    }
+
+
+    public void run()  {
+        if (! thread) { 
+            System.out.println("This is not a thread");   
+            return;
+        }
+        synchronized (links) {
+
+            try {
+            
+                System.out.println("\n\n============THREAD=============");
+                System.out.println("\n\nTitle: " + this.getTitle() +"\n\n"); 
+                writeJSON();
+                getElementsHashed("img", "src");
+                getElementsHashed("meta", "content");
+                bruteForceLinkSearch();
+
+                subpages.remove(this.url);
+                return;
+            
+            }
+            catch (IOException e) {
+
+            }
+        }
     }
     
 
@@ -217,7 +273,8 @@ public class WebCrawler implements Runnable {
 
         String target = "https://",
                         unclean_url,
-                        line;
+                        line,
+                        cleaned_url;
         String [] cleanURLs = new String []{};
 
         BufferedReader reader = null;  
@@ -237,14 +294,23 @@ public class WebCrawler implements Runnable {
                     // sanitizing malformed URLs
                     for (String s: cleanURLs) {
 
-                        if (s.contains("/>")) {
-                            s = s.replace("/>","");
+                        if (s.contains(",")) { 
+                            continue; 
                         }
-                        else if (s.contains ("\">")){
-                            s = s.replace ("\">"," ");
+
+                        s = urlSanitize(s);
+                    
+                        if (! s.contains(hostname)) {
+                            continue;
                         }
                         if (s.contains (target)) {
-                            links.add(s.substring(s.indexOf(target)));
+                            synchronized(links) {
+                                cleaned_url = s.substring(s.indexOf(target));
+                                if (!links.contains(cleaned_url)) {
+                                    links.add(cleaned_url);
+                                }
+                                
+                            }                            
                         }
 
                     }
@@ -286,7 +352,14 @@ public class WebCrawler implements Runnable {
             if (selector.equals("img")) { 
                 if (_attribute.contains("http") && _attribute.contains(hostname)) {
                     System.out.println(_attribute);
-                    links.add(_attribute); 
+                    if (_attribute.contains(",")) {
+                        continue;
+                    }
+                    _attribute = urlSanitize(_attribute); 
+                    synchronized(links) {
+                        if (!links.contains(_attribute))
+                        links.add(_attribute); 
+                    }
                 }
                 else {
                     extraLinks.add(_attribute);
@@ -349,8 +422,6 @@ public class WebCrawler implements Runnable {
 
                 // if line cannot possibly contain JSON, skip it
                 if (line.length() < target.length()) {
-                    // debugging --- remove later
-                    //System.out.println(++counter);
                     continue;
                 } 
                 
@@ -365,7 +436,12 @@ public class WebCrawler implements Runnable {
                         if (s.contains(":") & s.contains("url")) {
                             key = s.substring(0, s.indexOf(":"));
                             value = s.substring(s.indexOf(":")+1, s.length());
-                            if (value.contains(hostname) && value.contains("http")){
+                            //System.out.println(value);
+                            if (value.contains("http")){
+                                if (value.contains(",")) {
+                                    continue;
+                                }
+                                value = urlSanitize(value); 
                                 System.out.println("Legible value: " + value);
                                 links.add(value.substring(value.indexOf("http")));
                             }

@@ -14,6 +14,58 @@
 			list of image urls</li>
 		<li>This page contains javascript to send the request and use the
 			response to build a list of images</li>
+		<li>The JavaServlet creates an initial webcrawler called
+			<b> crawler </b>that loads the  entire HTML page using a package 
+			called 'htmlunit' 
+			<ul>
+				<li><b>htmlunit</b> uses a class called 
+					<b>WebClient</b> to encompass the html page after all 
+					of the JavaScript on the respective page is ran. This 
+					allows images to be collected from more complex and 
+					dynamic pages. 
+				</li> 
+				<li>I took measures to ensure that the <b>WebClient</b>
+					did not generate JS-errors, since it was made to
+					debug JS code according to very strict principles.
+				</li>
+				<li>To minimize <b> the number of accesses </b> 
+					to the site the WebClient stores 
+					 the html page using an xml format within the 
+					<b>Resources/output[unique#].txt</b> file. 
+				</li>
+				<li><b>pom.xml</b> has been configured to clear this directory 
+					whenever <b> mvn clean </b> is ran. 
+				</li>
+				<li> 
+					The xml is parsed. If the original web page used 
+					JavaScript to generate a large JSON collection, the 
+					collection is exported to the file 
+					<b>Resources/json_output[unique#].txt</b>
+					<br/> 
+					Otherwise, the xml is parsed for any common tags used
+					to link images. A thorough brute-force search is also 
+					done. It uses String sanitization and also checks to 
+					make sure the site domain and image format files are 
+					acceptable.
+				</li>
+				<li> 
+					During the parsing of the xml file, potential subpages are also added 
+					to another HashSet <b> subpages</b>. 
+				</li>
+			</ul>
+		
+		</li>
+		
+		<li>The JavaServlet uses <b> crawler </b> and its HashSet <b> links </b> to create
+		 	a concurrent threadpool of smaller webcrawlers. These smaller webcrawlers
+		    do not add further subpages. This behavior is specified in the <b>run</b>
+			method, since WebCrawler implements <b>Runnable</b> <br/>
+
+		</li>
+		<li>The threads crawl through the subpages, gathering images. Since the HashSet
+			<b>links</b> was declared as static, all webcrawlers share this HashSet.
+		</li>
+		<li> The thread pool is shut down after the pages have been crawled. </li>
 	</ul>
 	<h2>Backend Developers</h2>
 	<ul>
