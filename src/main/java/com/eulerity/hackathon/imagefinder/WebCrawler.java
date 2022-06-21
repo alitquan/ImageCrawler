@@ -5,9 +5,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.FileReader;
-import java.util.ArrayList; 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
-
+import java.util.Random;
 import java.net.URI;
 
 import org.jsoup.Jsoup;
@@ -28,9 +29,12 @@ public class WebCrawler implements Runnable {
     String hostname,domain,url;
     boolean thread;
     Document doc;
-    static HashSet <String> links;             // image links
-    HashSet <String> extraLinks;        // css, js, relative paths
-    HashSet <String> subpages;  
+
+    static HashSet <String> links;      // global image links a few false positives;
+    HashSet <String> extraLinks;        // css, js, misc
+    HashSet <String> subpages;          // absolute and relative paths
+    HashSet <String> threadLinks;       // image links gathered by individual thread 
+
     int create_time= (int) System.currentTimeMillis();
 
     // resource folders. are cleaned out using pom.xml configuration
@@ -51,9 +55,14 @@ public class WebCrawler implements Runnable {
     public WebCrawler(String _url, boolean is_thread) throws Exception {
         this.url = _url; 
         this.thread = is_thread;
-        if (links == null) {
-            links = new HashSet<String>();
+
+        // no thread can (re) initialize this global 
+        if (!this.thread) {
+            links = new HashSet<String> ();
         }
+
+        //set-up
+        threadLinks = new HashSet<String> ();
         extraLinks = new HashSet <String> ();
         subpages = new HashSet<String>();
         URI uri = new URI(url);
@@ -108,7 +117,10 @@ public class WebCrawler implements Runnable {
 
 
 
-    
+    /**
+     * @param url   the url that the thread will crawl
+     * @return      the webcrawler, but in thread form
+     */
     public WebCrawler retSubPageCrawler(String url) {
         try {
             return new WebCrawler(url, true);
@@ -121,15 +133,27 @@ public class WebCrawler implements Runnable {
     }
     
     
-    public void reset() {
-        links = new HashSet<>(); 
+    /**
+     * Will return the appropriate hashset.
+     * Threads cannot directly add to the global URL hashset.
+     * It can consume too much RAM
+     * Instead, URLS that threads crawl will be saved to their own
+     * HashSet. A random number will be selected and added to the global
+     * hashset.
+     * @return      if a thread is running this, the thread's individual URL hashset
+     *              otherwise, the global hashset will be returned
+     */
+    public HashSet <String> getHashSet() {
+        if (this.thread) 
+            return this.threadLinks;
+        else 
+            return links;
     }
 
 
-
+    // cleanup 
     @Override
     public void finalize() {
-        // if (! thread) return;
 
         try {      
             File delete = new File(xml_output);
@@ -164,7 +188,7 @@ public class WebCrawler implements Runnable {
 
 
     
-    
+    // prints length of global HashSet    
     public int getLinksLength() {
         return links.size();
     }
@@ -172,7 +196,9 @@ public class WebCrawler implements Runnable {
 
 
 
-
+    /**
+     * @return      global url HashSet, but in array form
+     */
     public String [] retURLsAsArrays() {
 
         String retArr[] = new String [links.size()];
@@ -184,6 +210,11 @@ public class WebCrawler implements Runnable {
 
     }
 
+
+
+    /**
+     * @return  global subpage url hashset, but in array form
+     */
     public String [] retSubPagesAsArrays() {
 
         String retArr[] = new String [subpages.size()];
@@ -195,7 +226,12 @@ public class WebCrawler implements Runnable {
     }
 
 
-    // replaces illegal url characters in string s
+
+
+    /**
+     * @param s url with invalid characters
+     * @return  sanitized version of @param s 
+     */
     public String urlSanitize(String s) {
 
         if (s.contains("/>")) {
@@ -217,6 +253,67 @@ public class WebCrawler implements Runnable {
     }
 
 
+
+    /**
+     * This can only be run by threads. 
+     * It adds a random assortment of image URLS 
+     * collected from the subpages that threads 
+     * have been designated to crawl. 
+     * 
+     * This random assortment is added to the global
+     * hashset. This reduces a lot of memory overhead
+     * while increasing diversity.
+     */
+    public void addFoundImages() {
+        if (! thread) throw new Error("NOT A THREAD");
+
+    
+        int images_allowed = 5;
+
+        // to prevent errors 
+        if (threadLinks.size() < images_allowed) {
+            images_allowed = threadLinks.size(); 
+        }
+
+        // convert HashSet to an array
+        String [] hashset = threadLinks.toArray(new String[threadLinks.size()]);
+  
+        // generate a random number
+        Random generator;
+
+        for (int i = images_allowed; i > 0; i--) {
+            generator = new Random();
+        
+            int random = generator.nextInt(threadLinks.size());
+            String randomURL = hashset[random];
+
+            // get the element at random number index
+            System.out.println("Random element: "
+                            + randomURL);
+            
+            // add random element to list 
+            synchronized (links) {
+                if (links.contains(randomURL) )
+                links.add(randomURL);
+            }
+                    
+        }
+    
+
+    }
+
+
+
+
+    /**
+     *  Thread behavior is different from a normal 
+     *  WebCrawler. It does not gather any more URLs.
+     * 
+     *  Threads also have their own HashSet. They add
+     *  image URLs found on their respective subpages.
+     *  Using 'addfoundImages()', they add an arbitrary
+     *  number of these URLs to the master hashset
+     */
     public void run()  {
         if (! thread) { 
             System.out.println("This is not a thread");   
@@ -228,10 +325,12 @@ public class WebCrawler implements Runnable {
             
                 System.out.println("\n\n============THREAD=============");
                 System.out.println("\n\nTitle: " + this.getTitle() +"\n\n"); 
+
                 writeJSON();
                 getElementsHashed("img", "src");
                 getElementsHashed("meta", "content");
                 bruteForceLinkSearch();
+                addFoundImages();
 
                 subpages.remove(this.url);
                 return;
@@ -244,13 +343,13 @@ public class WebCrawler implements Runnable {
     }
     
 
-
-
-
+    /*
+        This is run by the initial WebCrawler, 
+        which is the one that creates all of the threads.
+    */
     public void getAllImageURLs() throws IOException {
 
         writeJSON();
-        // could be logos
         System.out.println("==============Image URLS==============");
         getElementsHashed("img", "src");
         getElementsHashed("meta", "content");
@@ -261,13 +360,16 @@ public class WebCrawler implements Runnable {
         System.out.println (extraLinks.toString());
         getElementsHashed("a", "href");
         System.out.println ("\n\n=============SUBPAGES===========" + subpages.toString());
-        // needs to clean out css and js files, relative pathjs
         
     }
     
 
 
-
+    /**
+     * Brute-force parsing of the generated XML file.
+     * All image files are added to the appropriate 
+     * HashSet
+     */
 
     public void bruteForceLinkSearch() {
 
@@ -276,8 +378,11 @@ public class WebCrawler implements Runnable {
                         line,
                         cleaned_url;
         String [] cleanURLs = new String []{};
-
+        
+        // will determine whether to save it to global links or links for the thread
+        HashSet <String> hashset = getHashSet();
         BufferedReader reader = null;  
+
         try {
 
             reader= new BufferedReader(new FileReader(xml_output));
@@ -286,8 +391,10 @@ public class WebCrawler implements Runnable {
                 
                 // looks for links that are not referred to by the <a> tag
                 if(line.contains(target) & !subpages.contains(line)) {
+
                     // gets the whole line starting from "https://"
                     unclean_url= line.substring(line.indexOf(target));
+
                     // seperating URLs from attributes, text, and/or clutter
                     cleanURLs  = unclean_url.split(" ");
 
@@ -303,17 +410,19 @@ public class WebCrawler implements Runnable {
                         if (! s.contains(hostname)) {
                             continue;
                         }
+
+                        // ensuring that resulting string is still URL
                         if (s.contains (target)) {
                             synchronized(links) {
                                 cleaned_url = s.substring(s.indexOf(target));
                                 if (!links.contains(cleaned_url)) {
-                                    links.add(cleaned_url);
-                                }
-                                
+                                    hashset.add(cleaned_url);
+                                }      
                             }                            
                         }
 
                     }
+
                 }
             }
         } 
@@ -345,26 +454,41 @@ public class WebCrawler implements Runnable {
     Need to actually implement 
     */
     public void getElementsHashed (String selector, String attribute) {
+        // getting the correct tag
         Elements elements = doc.select (selector);
+
+        // will get appropriate hashSet depending on if this is a thread
+        HashSet <String> hashset = getHashSet();
+
         if (elements.isEmpty()) return;
+
         for (Element e: elements) {
+
             String _attribute= e.attr(attribute);
+
+            // getting image tags
             if (selector.equals("img")) { 
-                if (_attribute.contains("http") && _attribute.contains(hostname)) {
+
+                // determine if it is a link and sanitize
+                if (_attribute.contains("http") ) {
                     System.out.println(_attribute);
+
                     if (_attribute.contains(",")) {
                         continue;
                     }
                     _attribute = urlSanitize(_attribute); 
+
+                    // adding it to appropriate hashset
                     synchronized(links) {
                         if (!links.contains(_attribute))
-                        links.add(_attribute); 
+                        hashset.add(_attribute); 
                     }
                 }
                 else {
                     extraLinks.add(_attribute);
                 }
             }
+
 
             // getting subpages --- only relative paths with no php scripts 
             else if (selector.equals("a") ) {
@@ -386,10 +510,11 @@ public class WebCrawler implements Runnable {
                 
             }
       
-            // <meta property="og:image" content= ... > 
+
+            // another alternative for defining images
             else if (selector.equals("meta")) {
                 if (e.attr("property").equals("og:image"))
-                    links.add(_attribute);
+                    hashset.add(_attribute);
 
             }
         }
@@ -479,7 +604,6 @@ public class WebCrawler implements Runnable {
         FileWriter writer = new FileWriter(output);
 
         // moves the json portion of the text to the resource directory
-        // using example 4, see if finding the 'window.' serves as locating line 
         writer.write(getPostDataJSON());
 
         // cleaning up resources

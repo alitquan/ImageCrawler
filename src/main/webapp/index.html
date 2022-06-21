@@ -1,112 +1,80 @@
 <html>
 <head>
+	<link rel="stylesheet" href="./main.css"> </link>
 </head>
 <body>
-	<h1>Eulerity Take-Home Challenge</h1>
+	<div class ="explanation flexbox">
 
-	<h2>How it works</h2>
-	<ul>
-		<li>Pressing the submit button on this page will make a POST
-			request to /main</li>
-		<li>That request will contain a form parameter with the url
-			populated in the input box below</li>
-		<li>The ImageFinder servlet will respond to the request with a
-			list of image urls</li>
-		<li>This page contains javascript to send the request and use the
-			response to build a list of images</li>
-		<li>The JavaServlet creates an initial webcrawler called
-			<b> crawler </b>that loads the  entire HTML page using a package 
-			called 'htmlunit' 
-			<ul>
-				<li><b>htmlunit</b> uses a class called 
-					<b>WebClient</b> to encompass the html page after all 
-					of the JavaScript on the respective page is ran. This 
-					allows images to be collected from more complex and 
-					dynamic pages. 
-				</li> 
-				<li>I took measures to ensure that the <b>WebClient</b>
-					did not generate JS-errors, since it was made to
-					debug JS code according to very strict principles.
-				</li>
-				<li>To minimize <b> the number of accesses </b> 
-					to the site the WebClient stores 
-					 the html page using an xml format within the 
-					<b>Resources/output[unique#].txt</b> file. 
-				</li>
-				<li><b>pom.xml</b> has been configured to clear this directory 
-					whenever <b> mvn clean </b> is ran. 
-				</li>
-				<li> 
-					The xml is parsed. If the original web page used 
-					JavaScript to generate a large JSON collection, the 
-					collection is exported to the file 
-					<b>Resources/json_output[unique#].txt</b>
-					<br/> 
-					Otherwise, the xml is parsed for any common tags used
-					to link images. A thorough brute-force search is also 
-					done. It uses String sanitization and also checks to 
-					make sure the site domain and image format files are 
-					acceptable.
-				</li>
-				<li> 
-					During the parsing of the xml file, potential subpages are also added 
-					to another HashSet <b> subpages</b>. 
-				</li>
-			</ul>
-		
-		</li>
-		
-		<li>The JavaServlet uses <b> crawler </b> and its HashSet <b> links </b> to create
-		 	a concurrent threadpool of smaller webcrawlers. These smaller webcrawlers
-		    do not add further subpages. This behavior is specified in the <b>run</b>
-			method, since WebCrawler implements <b>Runnable</b> <br/>
+		<h1>Eulerity Take-Home Challenge</h1>
 
-		</li>
-		<li>The threads crawl through the subpages, gathering images. Since the HashSet
-			<b>links</b> was declared as static, all webcrawlers share this HashSet.
-		</li>
-		<li> The thread pool is shut down after the pages have been crawled. </li>
-	</ul>
-	<h2>Backend Developers</h2>
-	<ul>
-		<li>You can update the ImageFinder servlet to add crawling logic</li>
-		<li>Feel free to add as many classes/packages/files/third party
-			libraries as you'd like</li>
-		<li>We recommend JSoup for parsing web pages</li>
-		<li>You can update this page's html/css/style if you plan on
-			improving the interface</li>
-		<li>Your final submission does not need to contain any of the
-			files included herein</li>
-		<li>This project is just skeleton code so you can hit the ground
-			running.</li>
-		<li>Some ideas:
-			<ul>
-			<li>Crawl not only the given url, but other pages in the same domain</li>
-			<li>Make your crawler multithreaded to speed up response times</li>
-			<li>Be a friendly crawler and try not to hammer a site</li>
-			<li>Think about how to identify different classes of images and do they need special handling</li>
-			<li>Can you identify images as logos? Perhaps collect favicons?</li>
-			<li>Can you mark images that contain people?</li>
-			</ul>
-		</li>
-	</ul>
-	<h2>Important Notes</h2>
-	<p>Congratulations on making it this far into the interview
-		process!</p>
-	<p>
-	This is a free-form hackathon for a very important reason. We wish to see what ideas you can bring to the table.
-	</p>
-	<p><strong>If your submission only contains 5-10 lines of new code, please think twice about submitting it.</strong> If you need more time, you can ask for it.
-	</p>
-	<p>
-	You can use one of the ideas above, but feel free to go off and build something completely different. 
-	The important thing is to submit something that highlights your strengths as a developer.
-	</p>
-	<p>
-	  <b>Remember, this is your chance to show off how you can best contribute to our team.</b>
-	</p>
-	<p>Please remember to think about good design and code style. Comments in your code are great, but thought should also be taken in how to name your variables and method.</p>
+		<h2>How it works</h2>
+		<ul>
 
+			<li>Pressing the submit button on this page will make a POST
+				request to /main</li>
+			<li>That request will contain a form parameter with the url
+				populated in the input box below</li>
+			<li>The ImageFinder servlet will respond to the request with a
+				list of image urls</li>
+			<li>This page contains javascript to send the request and use the
+				response to build a list of images</li>
+			<li>The JavaServlet creates an initial webcrawler called
+				<b> crawler </b>that loads the  entire HTML page using a package 
+				called 'htmlunit' 
+				<ul>
+					<li><b>htmlunit</b> uses a class called 
+						<b>WebClient</b> to encompass the html page after all 
+						of the JavaScript on the respective page is ran. This 
+						allows images to be collected from more complex and 
+						dynamic pages. 
+					</li> 
+					<li> WebClient  was created to troubleshoot JS-code. In This
+						application, I won't be using that functionality. So I 
+						suppressed all related warnings to lower clutter. 
+					</li>
+					<li><b>To minimize the number of accesses </b> 
+						to the site, the WebClient stores the html page 
+						using an xml format and writes it to the 
+						<i>Resources/output[unique#].txt</i> file. 
+					</li>
+					<li><b>pom.xml</b> has been configured to clear this directory 
+						whenever <b> mvn clean </b> is ran. 
+					</li>
+					<li> 
+						The xml is parsed. The method <b>writeJSON</b> is used 
+						to locate any JSON generated via dynamic webpages and stores
+						it to: 
+						<i>Resources/json_output[unique#].txt</i>
+					</li>
+					<li>
+						Otherwise, the xml is parsed for any common image-related tags via
+						the method <b>getElementsHashed()</b>, and also parsed for any 
+						files beginning with "https://" (this is done via <b>bruteForceLinkSearch</b>
+					</li>
+					<li> 
+						During the parsing of the xml file, potential subpages are also added 
+						to another HashSet, <b>subpages</b>. 
+					</li>
+				</ul>
+			
+			</li>
+			
+			<li>The JavaServlet uses <b> crawler </b> and its HashSet <b> links </b> to create
+				a concurrent threadpool of smaller webcrawlers. These smaller webcrawlers
+				do not add further subpages. This behavior is specified in the <b>run</b>
+				method, since WebCrawler implements <b>Runnable</b> <br/>
+
+				<ul>
+					<li> The resulting threads also do not directly add the set of subpages </li>
+					<li> They crawl through the subpages and add URLs to a thread-specific hashet</li>
+					<li> At the end of <b>run</b> this thread adds a number of random elements to
+						the global HashSet </li>
+					<li> After all the threads are run, the thread pool is shut down</li> 
+				</ul>
+
+			</li>
+		</ul>
+    </div>
 
 
 	<div class="content">

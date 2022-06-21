@@ -1,0 +1,47 @@
+html {
+	font-family: san-serif;
+	background: #4C2719;
+	padding: 1rem;
+}
+
+body {
+	max-width: 960px;
+	margin: 0 auto;
+   
+}
+
+html, body {
+	height:100%;
+}
+
+.explanation {
+    padding: 5em;
+    color: #ffe0B5;
+    background: #a4af69;
+    border-radius: 10%;
+    margin-top: 5em;
+    padding-bottom: 5em;
+}
+
+b {
+    color: #D35269;
+}
+
+li {
+    list-style-type: disc;
+}
+.input {
+    text-align:center;
+}
+
+.output {
+    display: flex;
+    flex-wrap: wrap; 
+}
+
+.flexbox {
+	display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+}
