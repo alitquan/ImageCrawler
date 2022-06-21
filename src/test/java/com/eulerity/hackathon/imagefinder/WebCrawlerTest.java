@@ -14,7 +14,7 @@ import org.jsoup.select.Elements;
 
 import java.util.*;
 
-public class WebCrawlerTest {
+public class WebCrawlerTest  {
     WebCrawler testInstance, testInstance2, test3,test4,test5;
 
     // using a blog 

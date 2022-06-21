@@ -28,7 +28,7 @@ public class WebCrawler {
     String hostname,domain; 
     int depth; 
     Document doc;
-    HashSet <String> links;             // image links
+    static HashSet <String> links;             // image links
     HashSet <String> extraLinks;        // css, js, relative paths
     HashSet <String> subpages;  
 
@@ -103,89 +103,6 @@ public class WebCrawler {
     
 
 
-    /**
-     * @param target        the string that you are looking for
-     *                      it should always be the same thing. Will have to test
-     * @return              the String that contains all the JSON to be parsed
-     * 
-     * this is used because JSOUP, while it can be useful,  only loads the DOM prior 
-     * to the loading of the script. After all the JS is run on a dynamic webpage,
-     * the data is stored as a JSON file
-     */
-    public String getPostDataJSON () {
-        String target = "window."; // commonly indicates json length
-        BufferedReader reader = null;  
-        try {
-
-            reader= new BufferedReader(new FileReader(xml_output));
-            String line, key, value,retVal="";
-            int counter = 0;
-
-            while ((line = reader.readLine()) != null) {  
-
-                // if line cannot possibly contain JSON, skip it
-                if (line.length() < target.length()) {
-                    // debugging --- remove later
-                    //System.out.println(++counter);
-                    continue;
-                } 
-                
-                // return the post-script JSON for easier parsing
-                if (line.substring(0, target.length()).equals(target) && line.length() > 5000) {
-                    String unescape = line.replaceAll("\\\\"+"\"", "");
-                    String [] unescapeSplit = unescape.split(",");
-                    for (String s: unescapeSplit) {
-                        retVal+= "\n" + s;
-                       
-                        // breaks up JSON records and stores urls, which contain images
-                        if (s.contains(":") & s.contains("url")) {
-                            key = s.substring(0, s.indexOf(":"));
-                            value = s.substring(s.indexOf(":")+1, s.length());
-                            if (value.contains(hostname) && value.contains("http")){
-                                System.out.println("Legible value: " + value);
-                                links.add(value.substring(value.indexOf("http")));
-                            }
-                            
-                            //links.add(value.substring(s.indexOf("http"),s.length()));
-                        }
-                    }
-                }
-            }
-            return retVal;
-  
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try { 
-                reader.close(); 
-            }
-            catch (IOException e) {
-                e.getStackTrace();
-            }   
-        }
-
-        // check the path specified by global variable xml_output for this error
-        return ("Target String was not detected"); 
-    }
-
-    public void writeJSON() throws IOException {
-        // write the xml output to a file -- for debugging
-        File output = new File(json_output);
-        FileWriter writer = new FileWriter(output);
-
-        // moves the json portion of the text to the resource directory
-        // using example 4, see if finding the 'window.' serves as locating line 
-        writer.write(getPostDataJSON());
-
-        // cleaning up resources
-        writer.flush();
-        writer.close();
-    }
-    
-
 
 
     // prints out the file 
@@ -193,6 +110,7 @@ public class WebCrawler {
         return doc.title(); 
     } 
 
+  
 
 
     /** 
@@ -202,6 +120,51 @@ public class WebCrawler {
     public Elements getElements(String selector) {
         return doc.select(selector);
     }
+
+
+    
+    
+    public int getLinksLength() {
+        return links.size();
+    }
+
+
+
+
+
+    public String [] retURLsAsArrays() {
+        String retArr[] = new String [links.size()];
+        int i = 0;
+        for (String url: links) {
+            retArr[i++] = url;
+        }
+        return retArr;
+    }
+
+
+
+    
+    public void getAllImageURLs() throws IOException {
+
+        writeJSON();
+        // could be logos
+        System.out.println("==============Image URLS==============");
+        getElementsHashed("img", "src");
+        getElementsHashed("meta", "content");
+        bruteForceLinkSearch();
+        System.out.println (links.toString());
+        System.out.println("==============MISC==============");
+        getElementsHashed("link", "href"); // needs to implement this 
+        System.out.println (extraLinks.toString());
+        getElementsHashed("a", "href");
+        System.out.println ("\n\n=============SUBPAGES===========" + subpages.toString());
+        // needs to clean out css and js files, relative pathjs
+        
+    }
+    
+
+
+
 
     public void bruteForceLinkSearch() {
 
@@ -263,6 +226,10 @@ public class WebCrawler {
     }
 
 
+
+
+
+
     /*
     Gets all elements of a selected selctor via a Hashset
     Need to actually implement 
@@ -309,38 +276,96 @@ public class WebCrawler {
 
             }
         }
-    }
+    } 
 
-    
 
-    public void getAllImageURLs() throws IOException {
-        writeJSON();
-        // could be logos
-        System.out.println("==============Image URLS==============");
-        getElementsHashed("img", "src");
-        getElementsHashed("meta", "content");
-        bruteForceLinkSearch();
-        System.out.println (links.toString());
-        System.out.println("==============MISC==============");
-        getElementsHashed("link", "href"); // needs to implement this 
-        System.out.println (extraLinks.toString());
-        getElementsHashed("a", "href");
-        System.out.println ("\n\n=============SUBPAGES===========" + subpages.toString());
-        // needs to clean out css and js files, relative pathjs
-        
-    }
-    
-    public int getLinksLength() {
-        return links.size();
-    }
+   
 
-    public String [] retURLsAsArrays() {
-        String retArr[] = new String [links.size()];
-        int i = 0;
-        for (String url: links) {
-            retArr[i++] = url;
+
+
+
+    /**
+     * @param target        the string that you are looking for
+     *                      it should always be the same thing. Will have to test
+     * @return              the String that contains all the JSON to be parsed
+     * 
+     * this is used because JSOUP, while it can be useful,  only loads the DOM prior 
+     * to the loading of the script. After all the JS is run on a dynamic webpage,
+     * the data is stored as a JSON file
+     */
+    public String getPostDataJSON () {
+        String target = "window."; // commonly indicates json length
+        BufferedReader reader = null;  
+        try {
+
+            reader= new BufferedReader(new FileReader(xml_output));
+            String line, key, value,retVal="";
+
+            while ((line = reader.readLine()) != null) {  
+
+                // if line cannot possibly contain JSON, skip it
+                if (line.length() < target.length()) {
+                    // debugging --- remove later
+                    //System.out.println(++counter);
+                    continue;
+                } 
+                
+                // return the post-script JSON for easier parsing
+                if (line.substring(0, target.length()).equals(target) && line.length() > 5000) {
+                    String unescape = line.replaceAll("\\\\"+"\"", "");
+                    String [] unescapeSplit = unescape.split(",");
+                    for (String s: unescapeSplit) {
+                        retVal+= "\n" + s;
+                       
+                        // breaks up JSON records and stores urls, which contain images
+                        if (s.contains(":") & s.contains("url")) {
+                            key = s.substring(0, s.indexOf(":"));
+                            value = s.substring(s.indexOf(":")+1, s.length());
+                            if (value.contains(hostname) && value.contains("http")){
+                                System.out.println("Legible value: " + value);
+                                links.add(value.substring(value.indexOf("http")));
+                            }
+                        }
+                    }
+                }
+            }
+            return retVal;
+  
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try { 
+                reader.close(); 
+            }
+            catch (IOException e) {
+                e.getStackTrace();
+            }   
         }
-        return retArr;
+
+        // check the path specified by global variable xml_output for this error
+        return ("Target String was not detected"); 
     }
+
+
+
     
+
+    public void writeJSON() throws IOException {
+        // write the xml output to a file -- for debugging
+        File output = new File(json_output);
+        FileWriter writer = new FileWriter(output);
+
+        // moves the json portion of the text to the resource directory
+        // using example 4, see if finding the 'window.' serves as locating line 
+        writer.write(getPostDataJSON());
+
+        // cleaning up resources
+        writer.flush();
+        writer.close();
+    }
+
 }
+    
