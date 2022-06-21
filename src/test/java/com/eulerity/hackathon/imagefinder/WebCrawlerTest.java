@@ -27,8 +27,8 @@ public class WebCrawlerTest  {
        // test3 = new WebCrawler(1, "https://imgur.com/gallery/BrgX9vM");
 
         // problem is that your method only works for a specific page in imgur
-        test4 = new WebCrawler(4, "https://unsplash.com/photos/fIq0tET6llw");
-        test5 = new WebCrawler(1, "https://www.istockphoto.com/photos/bangladesh");
+        test4 = new WebCrawler("https://unsplash.com/photos/fIq0tET6llw", false);
+        test5 = new WebCrawler("https://www.istockphoto.com/photos/bangladesh",false);
         // https://en.wikipedia.org/wiki/Gustavo_Petro
         // https://alltogether.swe.org/about-all-together/
         // https://iamafoodblog.com/ 

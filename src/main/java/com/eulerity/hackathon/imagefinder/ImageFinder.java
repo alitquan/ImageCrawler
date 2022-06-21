@@ -66,7 +66,7 @@ public class ImageFinder extends HttpServlet{
 		System.out.println("Got request of:" + path + " with query param:" + url);
 
 		try {
-			WebCrawler crawler = new WebCrawler(1, url);
+			WebCrawler crawler = new WebCrawler(url,false);
 			crawler.getAllImageURLs();
 			testLinks = crawler.retURLsAsArrays();
 		}

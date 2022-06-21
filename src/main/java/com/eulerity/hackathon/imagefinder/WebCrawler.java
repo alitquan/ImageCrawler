@@ -24,9 +24,9 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 */ 
 
 
-public class WebCrawler {
-    String hostname,domain; 
-    int depth; 
+public class WebCrawler implements Runnable {
+    String hostname,domain;
+    boolean thread;
     Document doc;
     static HashSet <String> links;             // image links
     HashSet <String> extraLinks;        // css, js, relative paths
@@ -48,8 +48,8 @@ public class WebCrawler {
      * javascript code. It throws errors whenever something unoptimal is detected, 
      * with respect to the efficacy of the JavaScript code. 
      */
-    public WebCrawler(int depth, String url) throws Exception {
-        this.depth = depth; 
+    public WebCrawler(String url, boolean is_thread) throws Exception {
+        this.thread = is_thread;
         links = new HashSet <String> ();
         extraLinks = new HashSet <String> ();
         subpages = new HashSet<String>();
@@ -98,12 +98,45 @@ public class WebCrawler {
 
         }
         catch (Exception e) {
-
+            // blank --- we don't want unnecessary errors
         }
     }
+
+
+
+
     
+    public WebCrawler retSubPageCrawler(String url) {
+        try {
+            return new WebCrawler(url, true);
+        }
+        catch (Exception e){
+            System.out.println("*************retSubPageCrawler************");
+            return null;
+        }
+
+    }
+        
 
 
+
+    @Override
+    public void finalize() {
+        // if (! thread) return;
+
+        try {      
+            File delete = new File(xml_output);
+            delete.delete();
+            delete = new File(json_output);
+            delete.delete();
+        }
+
+        catch (Exception e) {
+            System.out.println("Failed to delete");
+            e.printStackTrace();
+        }
+
+    }
 
 
     // prints out the file 
@@ -141,12 +174,23 @@ public class WebCrawler {
             retArr[i++] = url;
         }
         return retArr;
-        
+
     }
 
 
 
+    public void run() {
+        if (! thread) return;
+        getElementsHashed("img", "src");
+        getElementsHashed("meta", "content");
+        bruteForceLinkSearch();
+        return;
+    }
     
+
+
+
+
     public void getAllImageURLs() throws IOException {
 
         writeJSON();
@@ -187,7 +231,7 @@ public class WebCrawler {
                 if(line.contains(target) & !subpages.contains(line)) {
                     // gets the whole line starting from "https://"
                     unclean_url= line.substring(line.indexOf(target));
-                    // seperating links from attributes and other text
+                    // seperating URLs from attributes, text, and/or clutter
                     cleanURLs  = unclean_url.split(" ");
 
                     // sanitizing malformed URLs
