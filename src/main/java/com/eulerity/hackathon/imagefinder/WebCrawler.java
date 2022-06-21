@@ -31,11 +31,12 @@ public class WebCrawler {
     static HashSet <String> links;             // image links
     HashSet <String> extraLinks;        // css, js, relative paths
     HashSet <String> subpages;  
+    int create_time= (int) System.currentTimeMillis();
 
     // resource folders. are cleaned out using pom.xml configuration
-    final static String resources_path = "resources/", 
-                        xml_output     = resources_path + "output.txt",
-                        json_output    = resources_path + "json_output.txt";
+    final String resources_path = "resources/", 
+                 xml_output     = resources_path + "output" + create_time +".txt",
+                json_output    = resources_path + "json_output"+ create_time + ".txt";
 
 
     /** 
@@ -133,12 +134,14 @@ public class WebCrawler {
 
 
     public String [] retURLsAsArrays() {
+
         String retArr[] = new String [links.size()];
         int i = 0;
         for (String url: links) {
             retArr[i++] = url;
         }
         return retArr;
+        
     }
 
 
@@ -199,13 +202,10 @@ public class WebCrawler {
                         if (s.contains (target)) {
                             links.add(s.substring(s.indexOf(target)));
                         }
+
                     }
-
                 }
-           
             }
-  
-
         } 
         catch (FileNotFoundException e) {
             e.printStackTrace();
