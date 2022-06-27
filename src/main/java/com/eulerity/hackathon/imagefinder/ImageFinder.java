@@ -57,7 +57,7 @@ public class ImageFinder extends HttpServlet{
 		String url = req.getParameter("url");
 		WebCrawler crawler;
 
-		int maxThreads = 2;
+		int maxThreads = 3;
 		System.out.println("Got request of:" + path + " with query param:" + url);
 
 		try {

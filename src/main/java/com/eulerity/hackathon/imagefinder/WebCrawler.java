@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.FileReader;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
@@ -268,7 +267,7 @@ public class WebCrawler implements Runnable {
         if (! thread) throw new Error("NOT A THREAD");
 
     
-        int images_allowed = 5;
+        int images_allowed = 10;
 
         // to prevent errors 
         if (threadLinks.size() < images_allowed) {
@@ -349,17 +348,11 @@ public class WebCrawler implements Runnable {
     */
     public void getAllImageURLs() throws IOException {
 
-        writeJSON();
-        System.out.println("==============Image URLS==============");
+        writeJSON(); 
         getElementsHashed("img", "src");
         getElementsHashed("meta", "content");
-        bruteForceLinkSearch();
-        System.out.println (links.toString());
-        System.out.println("==============MISC==============");
-        getElementsHashed("link", "href"); // needs to implement this 
-        System.out.println (extraLinks.toString());
+        bruteForceLinkSearch(); 
         getElementsHashed("a", "href");
-        System.out.println ("\n\n=============SUBPAGES===========" + subpages.toString());
         
     }
     
@@ -471,7 +464,6 @@ public class WebCrawler implements Runnable {
 
                 // determine if it is a link and sanitize
                 if (_attribute.contains("http") ) {
-                    System.out.println(_attribute);
 
                     if (_attribute.contains(",")) {
                         continue;
@@ -567,7 +559,6 @@ public class WebCrawler implements Runnable {
                                     continue;
                                 }
                                 value = urlSanitize(value); 
-                                System.out.println("Legible value: " + value);
                                 links.add(value.substring(value.indexOf("http")));
                             }
                         }
