@@ -291,10 +291,8 @@ public class WebCrawler implements Runnable {
                             + randomURL);
             
             // add random element to list 
-            synchronized (links) {
-                if (links.contains(randomURL) )
+            if (! links.contains(randomURL) )
                 links.add(randomURL);
-            }
                     
         }
     
@@ -318,26 +316,24 @@ public class WebCrawler implements Runnable {
             System.out.println("This is not a thread");   
             return;
         }
-        synchronized (links) {
 
-            try {
-            
-                System.out.println("\n\n============THREAD=============");
-                System.out.println("\n\nTitle: " + this.getTitle() +"\n\n"); 
+        try {
+        
+            System.out.println("\n\n============THREAD=============");
+            System.out.println("\n\nTitle: " + this.getTitle() +"\n\n"); 
 
-                writeJSON();
-                getElementsHashed("img", "src");
-                getElementsHashed("meta", "content");
-                bruteForceLinkSearch();
-                addFoundImages();
+            writeJSON();
+            getElementsHashed("img", "src");
+            getElementsHashed("meta", "content");
+            bruteForceLinkSearch();
+            addFoundImages();
 
-                subpages.remove(this.url);
-                return;
-            
-            }
-            catch (IOException e) {
-
-            }
+            subpages.remove(this.url);
+            return;
+        
+        }
+        catch (IOException e) {
+            System.out.println("Thread run error");
         }
     }
     
