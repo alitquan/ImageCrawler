@@ -188,24 +188,6 @@ public class WebCrawler implements Runnable {
         return doc.title(); 
     } 
 
-    public static boolean isImage( String url) {
-        try {
-            BufferedImage image = ImageIO.read (new URL(url));
-
-            if (image != null) 
-                return true;
-            else
-                return false;
-
-        }
-
-        catch (Exception e) {
-            System.out.println ("\nError with url: " + url);
-            return false;
-        }
-        
-    }
-  
 
 
     /** 
@@ -269,8 +251,7 @@ public class WebCrawler implements Runnable {
     }
 
 
-
-
+ 
     /**
      * @param s url with invalid characters
      * @return  sanitized version of @param s 
@@ -415,7 +396,8 @@ public class WebCrawler implements Runnable {
                         unclean_url,
                         line,
                         cleaned_url;
-        String [] cleanURLs = new String []{};
+        String [] cleanURLs= new String []{};
+        String [] formatURLs = new String[]{};
         
         // will determine whether to save it to global links or links for the thread
         HashSet <String> hashset = getHashSet();
@@ -430,14 +412,38 @@ public class WebCrawler implements Runnable {
                 // looks for links that are not referred to by the <a> tag
                 if(line.contains(target) & !subpages.contains(line)) {
 
-                    // gets the whole line starting from "https://"
-                    unclean_url= line.substring(line.indexOf(target));
-
-                    // seperating URLs from attributes, text, and/or clutter
-                    cleanURLs  = unclean_url.split(" ");
+                    // seperating links based on space
+                    cleanURLs  = line.split(" ");
+                    
 
                     // sanitizing malformed URLs
                     for (String s: cleanURLs) {
+
+                        if (s.contains(",")) { 
+                            continue; 
+                        }
+
+                        s = urlSanitize(s);
+                    
+                        if (! s.contains(hostname)) {
+                            continue;
+                        }
+
+                        // ensuring that resulting string is still URL
+                        if (s.contains (target)) {
+                            synchronized(links) {
+                                cleaned_url = s.substring(s.indexOf(target));
+                                if (!links.contains(cleaned_url)) {
+                                    hashset.add(cleaned_url); // varies depending on whether or not is thread
+                                }      
+                            }                            
+                        }
+
+                    }
+
+                    
+                    // sanitizing malformed image urls 
+                    for (String s: formatURLs) {
 
                         if (s.contains(",")) { 
                             continue; 
@@ -483,6 +489,102 @@ public class WebCrawler implements Runnable {
     }
 
 
+    public static boolean  hasImageFormat(String url) {
+        String _url = url.toLowerCase();
+        if (_url.contains(".jpg") |
+            _url.contains(".png") | 
+            _url.contains(".jpeg") |
+            _url.contains(".gif") 
+        ) return true;
+
+        return false; 
+    }
+
+    /**
+     * 
+     * @param imgFormat         are results format specific?
+     * @param externalSite      are external sites allowed ?  
+     */
+    public void bruteSearchTwo(boolean imgFormat, boolean externalSite) {
+        String target = "https://",
+               line   = "",
+               unSanitized,
+               sanitized;
+        String [] splitLine= new String []{};
+        String [] formatURLs = new String[]{};
+        
+        // will determine whether to save it to global links or links for the thread
+        HashSet <String> hashset = getHashSet();
+        BufferedReader reader = null;  
+
+        try {
+
+            reader= new BufferedReader(new FileReader(xml_output));
+            
+            while ((line = reader.readLine()) != null) { 
+                splitLine = line.split(" ");                
+                boolean added = true; 
+
+                for (String s: splitLine) {
+
+                    if (s.contains(",")) continue; 
+
+                    if (s.contains("https")) {
+                         unSanitized = s.substring(s.indexOf("https"));
+                         sanitized = urlSanitize(unSanitized); 
+
+                         if (this.subpages.contains(sanitized) || this.extraLinks.contains(sanitized)) {
+                             System.out.println("Extra");
+                             continue; 
+                         }
+
+                         System.out.println("\n\nOriginal: " + unSanitized);
+                         System.out.println("Sanitized: " + sanitized);
+                    }
+                    else {
+                        continue;
+                    }
+
+                    // if user only wants image formats 
+                    if (imgFormat) {
+                        if (hasImageFormat(s)) {
+                            System.out.println("Is an image");
+                            added = true; 
+                        }
+                        else {
+                            added = false; 
+                        }
+                    }
+
+                    
+                    // if external sites are disallowed, skip external sites 
+                    if (!externalSite) {
+                        if (s.contains(hostname)) {
+                            added = true; 
+                        }
+                        else {
+                            System.out.println("external site");
+                            added = false; 
+                        }
+                    }
+
+                    if (added == true) {
+                        synchronized(links) {
+                            if (!links.contains(s)) {
+                                hashset.add(s); // varies depending on whether or not is thread
+                                System.out.println("ADDED");
+                            }      
+                        }                            
+                    } 
+
+                       
+                }
+            }
+        }
+        catch (Exception e) {
+
+        }
+    }
 
 
 
@@ -521,7 +623,7 @@ public class WebCrawler implements Runnable {
 
                         // debugging 
                         //System.out.println(_attribute);
-                        hashset.add(_attribute); 
+                            hashset.add(_attribute); 
                     }
                 }
                 else {
@@ -536,6 +638,7 @@ public class WebCrawler implements Runnable {
                 // links with same domain added are counted as subpages
                 if (_attribute.contains(domain)) {
                     subpages.add(_attribute);
+                    System.out.println("href= "+ _attribute);
                 }
                 
                 // relative paths are converted to absolute
