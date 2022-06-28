@@ -92,6 +92,7 @@ public class ImageFinder extends HttpServlet{
 		System.out.println("Got request of:" + path + " with query param:" + url);
 
 		try {
+
 			// initial crawl will load subpages
 			crawler = new WebCrawler(url,false);
 			crawler.setThreadLimit(perThread);
@@ -102,24 +103,22 @@ public class ImageFinder extends HttpServlet{
 
 			// next few lines randomizes which subpages are selected 
 			ArrayList<Integer> randomized = new ArrayList<>();
-
 			// first it is an ordered arraylist 
 			for (int i = 0; i < subpageLinks.length; i++) {
 				randomized.add(i);
 			}
-			
 			// arraylist is now randomized
 			Collections.shuffle(randomized);
 			
-			ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
 
+			ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
 			for (int i = 0; i < maxThreads; i++) {
 				
-				// create a thread using randomized subpage
+				// create a thread to crawl random subpage
 				String subpage = subpageLinks[randomized.remove(0)].replaceAll("\"", "");
 				Runnable worker = crawler.retSubPageCrawler(subpage);
-				
 				executor.execute(worker);
+
 			}
 		
 			// cleaning up 
@@ -135,7 +134,8 @@ public class ImageFinder extends HttpServlet{
 			subpageImageURL = crawler.retsubPageURLs();
 
 
-			// adding 0 to this will print all elements from the array
+			// adding 0 to respective field in HTML will print all photos
+			// otherwise parameter asks as a limit
 			if (perMain != 0) 
 				mainPageURLs = Arrays.copyOf(mainPageURLs, perMain);
 

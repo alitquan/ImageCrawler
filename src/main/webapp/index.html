@@ -161,16 +161,13 @@
 
 		apiCallBack = function(xhr, callback) {
 			if (xhr.readyState == XMLHttpRequest.DONE) {
-				// if HTTP request is not done 
 				if (xhr.status != 200) {
 					let message = xhr.status + ":" + xhr.statusText + ":"
 							+ xhr.responseText;
 					alert(message);
-					// display error message
 					throw 'API call returned bad code: ' + xhr.status;
 				}
 
-				// if there is responseText, parse it and then call callback on it
 				let response = xhr.responseText ? JSON.parse(xhr.responseText)
 						: null;
 				if (callback) {
@@ -196,24 +193,12 @@
 
 		*/
 		makeApiCall = function(url, method, obj, callback) {
-			// instantiates HTTP request
 			let xhr = new XMLHttpRequest();
-
-			// initiates a request, adding method and URL
 			xhr.open(method, url);
-
-			/* 
-			when ready state changes 
-			bind the xmlhttprequest and function (i.e update list)
-			to the function apiCallBack
-			*/
 			xhr.onreadystatechange = apiCallBack.bind(null, xhr, callback);
 
-			// will only send form data 
 			xhr.send
 					(obj ? 
-
-					// if object is form data, object will be returned 
 					
 					obj instanceof FormData || obj.constructor == String 
 						? 
@@ -221,11 +206,11 @@
 					: null);
 		}
 
-		// listens 
+
+
 		document.getElementById('main-page-submit').addEventListener("click", function(event) {
-			// prevents it from submitting immediately 
 			event.preventDefault();
-			subpages = true;
+			
 			console.log(subpages); 
 			console.log(numThreads.value);
 
@@ -238,7 +223,14 @@
 				! _perMain  ||  ! _perThread  ) {
 					window.alert("Please fill out each form. Default values are recommended"); 
 					return;
-				}
+			}
+
+			if (_numThreads < 0 || _perMain < 0 || _perThread < 0){ 
+					window.alert ("No negative numbers please");
+					return;
+			}
+
+			subpages = true;
 
 			makeApiCall('/main?url=' + urlInput.value
 						+ '&threads=' + numThreads.value 
@@ -249,11 +241,10 @@
 			
 		});
 
+
+
 		document.getElementById('subpage-submit').addEventListener("click", function(event) {
-			// prevents it from submitting immediately 
 			event.preventDefault();
-			console.log("Submit secondary page button");
-			console.log(subpages);
 
 			if (! subpages) {
 				window.alert("You need to crawl the primary page first");

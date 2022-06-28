@@ -601,7 +601,6 @@ public class WebCrawler implements Runnable {
                         if (s.contains(":") & s.contains("url")) {
                             key = s.substring(0, s.indexOf(":"));
                             value = s.substring(s.indexOf(":")+1, s.length());
-                            //System.out.println(value);
                             if (value.contains("http")){
                                 if (value.contains(",")) {
                                     continue;
