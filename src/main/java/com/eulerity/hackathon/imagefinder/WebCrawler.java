@@ -512,7 +512,8 @@ public class WebCrawler implements Runnable {
                 // determine if it is a link and sanitize
                 if (_attribute.contains("http") ) {
 
-                    if (_attribute.contains(",")) {
+                    if (_attribute.contains(",")|
+                        _attribute.contains(".gif")) {
                         continue;
                     }
                     _attribute = urlSanitize(_attribute); 
