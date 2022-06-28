@@ -32,7 +32,10 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 public class WebCrawler implements Runnable {
     String hostname,domain,url;
-    boolean thread;
+    boolean thread;           // is this instance a thread?
+    static boolean externalSites,    // are external sites allowed?  
+                   fileOnly;         // are only image formats allowed (png,jpg,etc)?
+
     Document doc;
 
     static HashSet <String> links;       // global image links a few false positives;
@@ -45,10 +48,12 @@ public class WebCrawler implements Runnable {
     static int threadLimit = 0;                // max number of images a thread can obtain  
     int create_time= (int) System.currentTimeMillis();  // for creating unique file names
 
-    // resource folders. are cleaned out using pom.xml configuration
+    // resource folders. cleaned out using pom.xml configuration
     final String resources_path = "resources/", 
                  xml_output     = resources_path + "output" + create_time +".txt",
                 json_output    = resources_path + "json_output"+ create_time + ".txt";
+
+
 
 
     /** 
@@ -100,19 +105,13 @@ public class WebCrawler implements Runnable {
             //rendering an html page post-javascript
             HtmlPage myPage = webclient.getPage(url);
 
-            // convert html to xml 
+            // convert html to xml; write it to a path 
             doc = Jsoup.parse(myPage.asXml());
-
-            // write the xml output to a file -- for debugging
             File output = new File(xml_output);
             FileWriter writer = new FileWriter(output);
             writer.write(myPage.asXml());
-
-            // cleaning up resources
             writer.flush();
             writer.close();
-
-            // getting data from the json that is loaded after javascript 
 
             // closes web client windows
             webclient.closeAllWindows();
@@ -129,6 +128,15 @@ public class WebCrawler implements Runnable {
     public void setThreadLimit(int limit) {
         this.threadLimit = limit;
     }
+
+    public void setExternal(boolean bool) {
+        this.externalSites = bool;
+    }
+
+    public void setMandatoryFormat(boolean bool) {
+        this.fileOnly = bool;
+    }
+
 
     /**
      * @param url   the url that the thread will crawl
@@ -352,10 +360,8 @@ public class WebCrawler implements Runnable {
             getElementsHashed("img", "src");
             getElementsHashed("meta", "content");
             getElementsHashed("a", "href");
-            bruteSearchTwo(false, false);
-            addFoundImages();
-
-            
+            bruteSearchTwo(fileOnly, externalSites);
+            addFoundImages();            
             return;
         
         }
@@ -376,115 +382,11 @@ public class WebCrawler implements Runnable {
         getElementsHashed("img", "src");
         getElementsHashed("meta", "content"); 
         getElementsHashed("a", "href");
-        bruteSearchTwo(false, false); 
+        bruteSearchTwo(fileOnly, externalSites); 
     } 
 
 
 
-
-    /**
-     * Brute-force parsing of the generated XML file.
-     * All image files are added to the appropriate 
-     * HashSet
-     */
-
-    public void bruteForceLinkSearch() {
-
-        String target = "https://",
-                        unclean_url,
-                        line,
-                        cleaned_url;
-        String [] cleanURLs= new String []{};
-        String [] formatURLs = new String[]{};
-        
-        // will determine whether to save it to global links or links for the thread
-        HashSet <String> hashset = getHashSet();
-        BufferedReader reader = null;  
-
-        try {
-
-            reader= new BufferedReader(new FileReader(xml_output));
-
-            while ((line = reader.readLine()) != null) { 
-                
-                // looks for links that are not referred to by the <a> tag
-                if(line.contains(target) & !subpages.contains(line)) {
-
-                    // seperating links based on space
-                    cleanURLs  = line.split(" ");
-                    
-
-                    // sanitizing malformed URLs
-                    for (String s: cleanURLs) {
-
-                        if (s.contains(",")) { 
-                            continue; 
-                        }
-
-                        s = urlSanitize(s);
-                    
-                        if (! s.contains(hostname)) {
-                            continue;
-                        }
-
-                        // ensuring that resulting string is still URL
-                        if (s.contains (target)) {
-                            synchronized(links) {
-                                cleaned_url = s.substring(s.indexOf(target));
-                                if (!links.contains(cleaned_url)) {
-                                    hashset.add(cleaned_url); // varies depending on whether or not is thread
-                                }      
-                            }                            
-                        }
-
-                    }
-
-                    
-                    // sanitizing malformed image urls 
-                    for (String s: formatURLs) {
-
-                        if (s.contains(",")) { 
-                            continue; 
-                        }
-
-                        s = urlSanitize(s);
-                    
-                        if (! s.contains(hostname)) {
-                            continue;
-                        }
-
-                        // ensuring that resulting string is still URL
-                        if (s.contains (target)) {
-                            synchronized(links) {
-                                cleaned_url = s.substring(s.indexOf(target));
-                                if (!links.contains(cleaned_url)) {
-                                    hashset.add(cleaned_url); // varies depending on whether or not is thread
-                                }      
-                            }                            
-                        }
-
-                    }
-
-                }
-            }
-        } 
-        catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } 
-        catch (IOException e) {
-            e.printStackTrace();
-        } 
-        finally {
-            try { 
-                reader.close(); 
-            }
-            catch (IOException e) {
-                e.getStackTrace();
-            }   
-        }
-
-
-    }
 
 
     public static boolean  hasImageFormat(String url) {
@@ -539,8 +441,8 @@ public class WebCrawler implements Runnable {
                              continue; 
                          }
 
-                         System.out.println("\n\nOriginal: " + unSanitized);
-                         System.out.println("Sanitized: " + sanitized);
+                        //  System.out.println("\n\nOriginal: " + unSanitized);
+                        //  System.out.println("Sanitized: " + sanitized);
                     }
                     else {
                         continue;
@@ -552,8 +454,8 @@ public class WebCrawler implements Runnable {
                             System.out.println("Is an image");
                             added = true; 
                         }
-                        else {
-                            added = false; 
+                        else { 
+                            continue;
                         }
                     }
 
@@ -749,8 +651,6 @@ public class WebCrawler implements Runnable {
 
         // moves the json portion of the text to the resource directory
         writer.write(getPostDataJSON());
-
-        // cleaning up resources
         writer.flush();
         writer.close();
     }

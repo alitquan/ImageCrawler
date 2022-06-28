@@ -120,6 +120,14 @@
 						<label for="per_thread">Images per Thread</label>
 						<input type="number" name="per_thread" id="per_thread" placeholder=3>
 					</li>
+					<li class ="form-row">
+						<label for="external">External Websites allowed?? </label>
+						<input type="checkbox" id="external" name="external" value="allowExt">
+					</li>
+					<li class ="form-row">
+						<label for="image_files">Image Files Only? </label>
+						<input type="checkbox" id="image_files" name="image_files" value="formatted">
+					</li>
 					
 				</ul> 
 				
@@ -159,6 +167,8 @@
 		var numThreads = document.querySelector('input[name=threads]');
 		var perMain    = document.querySelector('input[name=per_main]');
 		var perThread  = document.querySelector('input[name=per_thread]');
+		var external   = document.querySelector('input[name=external]');
+		var imgOnly    = document.querySelector('input[name=image_files]');
 
 		apiCallBack = function(xhr, callback) {
 			if (xhr.readyState == XMLHttpRequest.DONE) {
@@ -219,6 +229,8 @@
 			var _numThreads = numThreads.value;
 			var _perMain    = perMain.value;
 			var _perThread  = perThread.value;
+			var _external =	 external.checked; 
+			var _imgOnly  =  imgOnly.checked;
 
 			if(	! _urlInput || 	! _numThreads ||
 				! _perMain  ||  ! _perThread  ) {
@@ -237,6 +249,8 @@
 						+ '&threads=' + numThreads.value 
 						+ '&permain=' + perMain.value 
 						+ '&perthread=' + perThread.value 
+					 	+ '&extImg=' + _external
+						+ '&imgOnly=' + _imgOnly
 						, 'POST', null , updateList);
 
 			

@@ -54,14 +54,12 @@ public class ImageFinder extends HttpServlet{
 
 	@Override
 	protected final void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-		
+		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF); 		
+
 		resp.setContentType("text/json");
-		
-		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF); 
 		String path = req.getServletPath();
 
 
-		// printing out parameter names from the API call 
 		Enumeration<String> params = req.getParameterNames(); 
 		while(params.hasMoreElements()){
 			String paramName = params.nextElement();
@@ -81,45 +79,57 @@ public class ImageFinder extends HttpServlet{
 
 
 		// getting all parameters from request
-		String url = req.getParameter("url");
-		int maxThreads = Integer.parseInt( req.getParameter("threads") );
-		int  perMain = Integer.parseInt( req.getParameter("permain") );
-		int  perThread = Integer.parseInt ( req.getParameter("perthread")); 
+		String url         = req.getParameter("url");
+		String ext         = req.getParameter("extImg");
+		String imgFileOnly = req.getParameter("imgOnly");
+		int maxThreads     = Integer.parseInt( req.getParameter("threads") );
+		int  perMain       = Integer.parseInt( req.getParameter("permain") );
+		int  perThread     = Integer.parseInt ( req.getParameter("perthread")); 
+		
 
 
 		WebCrawler crawler;
 
 		System.out.println("Got request of:" + path + " with query param:" + url);
+		if (true) {
+		}		
 
 		try {
 
-			// initial crawl will load subpages
+			// creating the parent webcrawler
 			crawler = new WebCrawler(url,false);
 			crawler.setThreadLimit(perThread);
+
+			if (ext.equals("true")) { 
+				crawler.setExternal(true);
+				System.out.println("Access to external urls is allowed");
+			}
+			if (imgFileOnly.equals("true")) { 
+				crawler.setMandatoryFormat(true);
+				System.out.println("Only image files are allowed");
+			}
+
+			//initial crawl gathers subpages 
 			crawler.getAllImageURLs();
 			mainPageURLs  = crawler.retMainURLs();
 			subpageLinks = crawler.retSubPagesAsArrays();
+			
 
-
-			// next few lines randomizes which subpages are selected 
+			// an arraylist of random Integers 
 			ArrayList<Integer> randomized = new ArrayList<>();
-			// first it is an ordered arraylist 
 			for (int i = 0; i < subpageLinks.length; i++) {
 				randomized.add(i);
 			}
-			// arraylist is now randomized
 			Collections.shuffle(randomized);
 			
-
+			
+			// creating a threadpool to crawl subpages chosen at random 
 			ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
 			for (int i = 0; i < maxThreads; i++) {
-				
-				// create a thread to crawl random subpage
 				String subpage = subpageLinks[randomized.remove(0)].replaceAll("\"", "");
 				Runnable worker = crawler.retSubPageCrawler(subpage);
 				crawler.removeSubPage(subpage);
 				executor.execute(worker);
-
 			}
 		
 			// cleaning up 
