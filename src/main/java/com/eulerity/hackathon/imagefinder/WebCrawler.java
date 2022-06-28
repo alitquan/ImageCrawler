@@ -224,7 +224,7 @@ public class WebCrawler implements Runnable {
     /**
      * @return      global url HashSet, but in array form
      */
-    public String [] retURLsAsArrays() {
+    public String [] retMainURLs() {
 
         String retArr[] = new String [links.size()];
         int i = 0;
@@ -235,6 +235,19 @@ public class WebCrawler implements Runnable {
 
     }
 
+    /**
+     * @return      global url HashSet, but in array form
+     */
+    public String [] retsubPageURLs() {
+
+        String retArr[] = new String [subPageLinks.size()];
+        int i = 0;
+        for (String url: subPageLinks) {
+            retArr[i++] = url;
+        }
+        return retArr;
+
+    }
 
 
     /**
@@ -318,10 +331,10 @@ public class WebCrawler implements Runnable {
                             + randomURL);
             
             // add random element to list
-            synchronized (links) {
+            synchronized (subPageLinks) {
              
-                if (! links.contains(randomURL) )
-                    links.add(randomURL);
+                if (! subPageLinks.contains(randomURL) )
+                    subPageLinks.add(randomURL);
 
             }
                     
@@ -436,7 +449,7 @@ public class WebCrawler implements Runnable {
                             synchronized(links) {
                                 cleaned_url = s.substring(s.indexOf(target));
                                 if (!links.contains(cleaned_url)) {
-                                    hashset.add(cleaned_url);
+                                    hashset.add(cleaned_url); // varies depending on whether or not is thread
                                 }      
                             }                            
                         }

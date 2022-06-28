@@ -107,7 +107,7 @@ public class WebCrawlerTest  {
     @Test
     public void urlReturn() throws IOException {
         test5.getAllImageURLs();
-        String [] testArr = test5.retURLsAsArrays();
+        String [] testArr = test5.retMainURLs();
         System.out.println(test5.hostname);
         Assert.assertEquals(testArr.length, test5.getLinksLength());
     }

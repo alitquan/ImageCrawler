@@ -12,12 +12,14 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.concurrent.ExecutorService;
@@ -44,8 +46,11 @@ public class ImageFinder extends HttpServlet{
 			"https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&format=tiny"
     };
 	
-	public static String[] imageLinks = {};
+	public static String[] mainPageLinks = {};
 	public static String[] subpageLinks = {};
+
+
+	public static String[] subpageImageURL = {}; 
 
 
 
@@ -57,13 +62,12 @@ public class ImageFinder extends HttpServlet{
 		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF); 
 		String path = req.getServletPath();
 
-		Reader body = req.getReader();
-		
+
 		// debug 
 		Enumeration<String> params = req.getParameterNames(); 
 		while(params.hasMoreElements()){
-		String paramName = params.nextElement();
-		System.out.println("Parameter Name - "+paramName+", Value - "+req.getParameter(paramName));
+			String paramName = params.nextElement();
+			System.out.println("Parameter Name - "+paramName+", Value - "+req.getParameter(paramName));
 		}
 
 
@@ -81,8 +85,11 @@ public class ImageFinder extends HttpServlet{
 		try {
 			crawler = new WebCrawler(url,false);
 			crawler.getAllImageURLs();
-			imageLinks  = crawler.retURLsAsArrays();
+			mainPageLinks  = crawler.retMainURLs();
 			subpageLinks = crawler.retSubPagesAsArrays();
+
+
+			
 
 
 			// array of ordered numbers  
@@ -113,14 +120,21 @@ public class ImageFinder extends HttpServlet{
 
 			System.out.println("\nFinished all threads");
 			executor.shutdownNow();
-			imageLinks = crawler.retURLsAsArrays();
+			mainPageLinks = crawler.retMainURLs();
+			subpageImageURL = crawler.retsubPageURLs();
+
+
+			// adding 0 to this will print all elements from the array
+			if (perMain != 0) 
+				mainPageLinks = Arrays.copyOf(mainPageLinks, perMain);
 
 		}
 		catch (Exception e) {
 			//e.printStackTrace();
 		}
 
-		//resp.getWriter().print(GSON.toJson(imageLinks));
+		resp.getWriter().print(GSON.toJson(mainPageLinks));
+		//resp.getWriter().print(GSON.toJson(subpageImageURL));
 		
 		
 	}
