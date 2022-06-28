@@ -5,17 +5,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.FileReader;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
 
 import java.net.URI;
-import java.net.URL;
 
-import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -95,9 +90,8 @@ public class WebCrawler implements Runnable {
             // supresses warnings, errors, and exceptions (less clutter in logs)
             java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF); 
 
-            // creating a web client
+            // creating a web client, surpressing its error ()
             WebClient webclient = new WebClient();
-            // supressing unnecessary scripting errors
             webclient.getOptions().setThrowExceptionOnScriptError(false);
             webclient.getOptions().setPrintContentOnFailingStatusCode(false);
             webclient.getOptions().setThrowExceptionOnFailingStatusCode(false);
@@ -360,7 +354,7 @@ public class WebCrawler implements Runnable {
             getElementsHashed("img", "src");
             getElementsHashed("meta", "content");
             getElementsHashed("a", "href");
-            bruteSearchTwo(fileOnly, externalSites);
+            bruteSearchTwo(true, externalSites);
             addFoundImages();            
             return;
         
@@ -393,8 +387,7 @@ public class WebCrawler implements Runnable {
         String _url = url.toLowerCase();
         if (_url.contains(".jpg") |
             _url.contains(".png") | 
-            _url.contains(".jpeg") |
-            _url.contains(".gif") 
+            _url.contains(".jpeg")
         ) return true;
 
         return false; 
@@ -402,10 +395,29 @@ public class WebCrawler implements Runnable {
 
 
 
+    public boolean legalEntry(String url) {
+
+         // if user only wants image formats 
+        if (fileOnly) {
+            if (! hasImageFormat(url))
+                return false; 
+        }
+
+        
+        // if external sites are disallowed, skip external sites 
+        if (!externalSites) {
+            if (!url.contains(hostname)) 
+                return false; 
+        }
+
+        return true;
+    }
+    
+
 
     /**
      * 
-     * @param imgFormat         are results format specific?
+     * @param imgFormat         are urls only allowed to contain image formats?
      * @param externalSite      are external sites allowed ?  
      */
     public void bruteSearchTwo(boolean imgFormat, boolean externalSite) {
@@ -426,7 +438,6 @@ public class WebCrawler implements Runnable {
             
             while ((line = reader.readLine()) != null) { 
                 splitLine = line.split(" ");                
-                boolean added = true; 
 
                 for (String s: splitLine) {
 
@@ -444,37 +455,14 @@ public class WebCrawler implements Runnable {
                         //  System.out.println("\n\nOriginal: " + unSanitized);
                         //  System.out.println("Sanitized: " + sanitized);
                     }
-                    else {
-                        continue;
-                    }
+                    else { continue; }
 
-                    // if user only wants image formats 
-                    if (imgFormat) {
-                        if (hasImageFormat(sanitized)) {
-                            System.out.println("Is an image");
-                            added = true; 
-                        }
-                        else { 
-                            continue;
-                        }
-                    }
+                   
 
-                    
-                    // if external sites are disallowed, skip external sites 
-                    if (!externalSite) {
-                        if (sanitized.contains(hostname)) {
-                            added = true; 
-                        }
-                        else {
-                            System.out.println("external site");
-                            added = false; 
-                        }
-                    }
-
-                    if (added == true) {
+                    if (legalEntry(sanitized) == true) {
                         synchronized(links) {
                             if (!links.contains(sanitized)) {
-                                hashset.add(sanitized); // varies depending on whether or not is thread
+                                hashset.add(sanitized); 
                                 System.out.println("ADDED");
                             }      
                         }                            
@@ -501,7 +489,7 @@ public class WebCrawler implements Runnable {
         Elements elements = doc.select (selector);
 
         // will get appropriate hashSet depending on if this is a thread
-        HashSet <String> hashset = getHashSet();
+        HashSet <String> appropriateHashSet = getHashSet();
 
         if (elements.isEmpty()) return;
 
@@ -526,7 +514,7 @@ public class WebCrawler implements Runnable {
 
                         // debugging 
                         //System.out.println(_attribute);
-                            hashset.add(_attribute); 
+                            appropriateHashSet.add(_attribute); 
                     }
                 }
                 else {
@@ -562,7 +550,7 @@ public class WebCrawler implements Runnable {
             // another alternative for defining images
             else if (selector.equals("meta")) {
                 if (e.attr("property").equals("og:image"))
-                    hashset.add(_attribute);
+                    appropriateHashSet.add(_attribute);
 
             }
         }
@@ -614,7 +602,9 @@ public class WebCrawler implements Runnable {
                                     continue;
                                 }
                                 value = urlSanitize(value); 
-                                links.add(value.substring(value.indexOf("http")));
+
+                                if (legalEntry(value))
+                                    links.add(value.substring(value.indexOf("http")));
                             }
                         }
                     }

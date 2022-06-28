@@ -70,7 +70,7 @@ public class WebCrawlerTest  {
 
     // }
 
-    @Test
+    // @Test
     public void uniqueTest() throws Exception  {
         System.out.println("\n\n\n\n=========Testing URL crawl=========\n\n\n");
         test5 = new WebCrawler("https://allaboutcats.com/top-cat-blogs",false);
