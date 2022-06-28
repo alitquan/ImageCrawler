@@ -42,7 +42,7 @@ public class WebCrawler implements Runnable {
     HashSet <String> subpages;           // absolute and relative paths
     HashSet <String> threadLinks;        // container for indiv. thread. Holds URLs
 
-    int create_time= (int) System.currentTimeMillis();
+    int create_time= (int) System.currentTimeMillis();  // for creating unique file names 
 
     // resource folders. are cleaned out using pom.xml configuration
     final String resources_path = "resources/", 

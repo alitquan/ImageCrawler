@@ -210,10 +210,13 @@
 			// prevents it from submitting immediately 
 			event.preventDefault();
 
-			/*
-				located above 
-			*/
-			makeApiCall('/main?url='+ urlInput.value, 'POST', null, updateList);
+
+
+			makeApiCall('/main?url=' + urlInput.value
+						+ '&threads=' + numThreads.value 
+						+ '&permain=' + perMain.value 
+						+ '&perthread=' + perThread.value 
+						, 'POST', null , updateList);
 		});
 	</script>
 </body>

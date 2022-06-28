@@ -1,6 +1,7 @@
 package com.eulerity.hackathon.imagefinder;
 
 import java.io.IOException;
+import java.io.Reader;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -10,6 +11,7 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import org.apache.commons.io.IOUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -17,6 +19,7 @@ import org.jsoup.select.Elements;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -54,10 +57,25 @@ public class ImageFinder extends HttpServlet{
 		java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF); 
 		String path = req.getServletPath();
 
+		Reader body = req.getReader();
+		
+		// debug 
+		Enumeration<String> params = req.getParameterNames(); 
+		while(params.hasMoreElements()){
+		String paramName = params.nextElement();
+		System.out.println("Parameter Name - "+paramName+", Value - "+req.getParameter(paramName));
+		}
+
+
+		// getting all parameters from request
 		String url = req.getParameter("url");
+		int maxThreads = Integer.parseInt( req.getParameter("threads") );
+		int  perMain = Integer.parseInt( req.getParameter("permain") );
+		int  perThread = Integer.parseInt ( req.getParameter("perthread")); 
+
+
 		WebCrawler crawler;
 
-		int maxThreads = 3;
 		System.out.println("Got request of:" + path + " with query param:" + url);
 
 		try {
@@ -102,7 +120,8 @@ public class ImageFinder extends HttpServlet{
 			//e.printStackTrace();
 		}
 
-		resp.getWriter().print(GSON.toJson(imageLinks));
+		//resp.getWriter().print(GSON.toJson(imageLinks));
+		
 		
 	}
 }
