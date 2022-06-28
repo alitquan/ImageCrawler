@@ -1,6 +1,7 @@
 <html>
 <head>
 	<link rel="stylesheet" href="./main.css"> </link>
+
 </head>
 <body>
 	<div class ="explanation flexbox">
@@ -126,18 +127,33 @@
 
 
 			</form>
-			<button type="button">Submit!</button>
+			<button id = "main-page-submit" type="button">Get Images from URL!</button>
 		</div>
 		
 	</div>
 
-	<div class="output">
-			<ul class="results">
+	<div class="main-output">
+			<ul class="main-results">
 
 			</ul>
 	</div>
+
+	<div id="subpage-output">
+			<div id="subpage-button-container"> 
+				<button id = "subpage-submit" type="button">Get Images from URL's subpages!</button>
+			</div>
+			
+			<ul class="subpage-results">
+				
+			</ul>
+	</div>
+
+
 	<script>
-		var resultList = document.querySelector('ul.results');
+		var resultList = document.querySelector('ul.main-results');
+		var subpageList= document.querySelector('ul.subpage-results');
+		var subpages = false;
+
 		var urlInput   = document.querySelector('input[name=url]');
 		var numThreads = document.querySelector('input[name=threads]');
 		var perMain    = document.querySelector('input[name=per_main]');
@@ -206,18 +222,49 @@
 		}
 
 		// listens 
-		document.querySelector('button').addEventListener("click", function(event) {
+		document.getElementById('main-page-submit').addEventListener("click", function(event) {
 			// prevents it from submitting immediately 
 			event.preventDefault();
+			subpages = true;
+			console.log(subpages); 
+			console.log(numThreads.value);
 
+			var _urlInput   = urlInput.value;
+			var _numThreads = numThreads.value;
+			var _perMain    = perMain.value;
+			var _perThread  = perThread.value;
 
+			if(	! _urlInput || 	! _numThreads ||
+				! _perMain  ||  ! _perThread  ) {
+					window.alert("Please fill out each form. Default values are recommended"); 
+					return;
+				}
 
 			makeApiCall('/main?url=' + urlInput.value
 						+ '&threads=' + numThreads.value 
 						+ '&permain=' + perMain.value 
 						+ '&perthread=' + perThread.value 
 						, 'POST', null , updateList);
+
+			
 		});
+
+		document.getElementById('subpage-submit').addEventListener("click", function(event) {
+			// prevents it from submitting immediately 
+			event.preventDefault();
+			console.log("Submit secondary page button");
+			console.log(subpages);
+
+			if (! subpages) {
+				window.alert("You need to crawl the primary page first");
+			} 
+
+			makeApiCall('/main?render_subpage=' + subpages,'POST', null , updateList);
+			console.log("See if it is true" + subpages);
+
+			
+		});
+
 	</script>
 </body>
 

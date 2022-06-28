@@ -42,7 +42,8 @@ public class WebCrawler implements Runnable {
     HashSet <String> subpages;           // absolute and relative paths
     HashSet <String> threadLinks;        // container for indiv. thread. Holds URLs
 
-    int create_time= (int) System.currentTimeMillis();  // for creating unique file names 
+    static int threadLimit = 0;                // max number of images a thread can obtain  
+    int create_time= (int) System.currentTimeMillis();  // for creating unique file names
 
     // resource folders. are cleaned out using pom.xml configuration
     final String resources_path = "resources/", 
@@ -77,7 +78,7 @@ public class WebCrawler implements Runnable {
         domain = uri.getScheme() + "://" + uri.getHost();
         hostname = domain.startsWith("www.") ? domain.substring(4) : domain;  
 
-        // how to create dirs for testing
+        // creating resource folders
         File theDir = new File(resources_path);
         if (!theDir.exists()) {
             theDir.mkdirs();
@@ -124,6 +125,10 @@ public class WebCrawler implements Runnable {
 
 
 
+    // sets the thread limit 
+    public void setThreadLimit(int limit) {
+        this.threadLimit = limit;
+    }
 
     /**
      * @param url   the url that the thread will crawl
@@ -306,7 +311,7 @@ public class WebCrawler implements Runnable {
         if (! thread) throw new Error("NOT A THREAD");
 
     
-        int images_allowed = 10;
+        int images_allowed = this.threadLimit;
 
         // to prevent errors 
         if (threadLinks.size() < images_allowed) {

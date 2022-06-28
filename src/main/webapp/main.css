@@ -43,7 +43,7 @@ form {
     text-align: left;
 }
 
-.output {
+.main-output {
     display: flex;
     flex-wrap: wrap; 
 }
@@ -71,4 +71,13 @@ input, label {
 .form-row {
     padding: 2em;
     list-style-type: none;
+}
+
+.subpage-output {
+    justify-content: center;
+    background-color: #a4af69;
+}
+
+.subpage-button-container {
+    text-align: center;
 }

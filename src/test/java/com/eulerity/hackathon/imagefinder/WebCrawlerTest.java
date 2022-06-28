@@ -104,7 +104,7 @@ public class WebCrawlerTest  {
         assertTrue(true);
     }
 
-    @Test
+    //@Test
     public void urlReturn() throws IOException {
         test5.getAllImageURLs();
         String [] testArr = test5.retMainURLs();
@@ -112,7 +112,7 @@ public class WebCrawlerTest  {
         Assert.assertEquals(testArr.length, test5.getLinksLength());
     }
 
-    @Test
+    //@Test
     public void validImageTest() {
         System.out.println("\n\n\nUsing isImage");
         // url one 

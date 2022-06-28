@@ -46,11 +46,9 @@ public class ImageFinder extends HttpServlet{
 			"https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&format=tiny"
     };
 	
-	public static String[] mainPageLinks = {};
-	public static String[] subpageLinks = {};
-
-
-	public static String[] subpageImageURL = {}; 
+	public static String[] mainPageURLs = {};		/// urls of images on main page
+	public static String[] subpageLinks = {};		//  links to subpages
+	public static String[] subpageImageURL = {};    // urls of images located on subpages 
 
 
 
@@ -63,11 +61,22 @@ public class ImageFinder extends HttpServlet{
 		String path = req.getServletPath();
 
 
-		// debug 
+		// printing out parameter names from the API call 
 		Enumeration<String> params = req.getParameterNames(); 
 		while(params.hasMoreElements()){
 			String paramName = params.nextElement();
 			System.out.println("Parameter Name - "+paramName+", Value - "+req.getParameter(paramName));
+		}
+		
+		
+		// if request is to crawl subpages, display them and end  
+		String renderSubpage = req.getParameter("render_subpage");
+		if ( renderSubpage!= null) {
+			if (renderSubpage.equals("true"))
+				resp.getWriter().print(GSON.toJson(subpageImageURL));
+			else
+				System.out.println("Need to generate primary page first");
+			return; 
 		}
 
 
@@ -83,23 +92,23 @@ public class ImageFinder extends HttpServlet{
 		System.out.println("Got request of:" + path + " with query param:" + url);
 
 		try {
+			// initial crawl will load subpages
 			crawler = new WebCrawler(url,false);
+			crawler.setThreadLimit(perThread);
 			crawler.getAllImageURLs();
-			mainPageLinks  = crawler.retMainURLs();
+			mainPageURLs  = crawler.retMainURLs();
 			subpageLinks = crawler.retSubPagesAsArrays();
 
 
-			
-
-
-			// array of ordered numbers  
+			// next few lines randomizes which subpages are selected 
 			ArrayList<Integer> randomized = new ArrayList<>();
 
+			// first it is an ordered arraylist 
 			for (int i = 0; i < subpageLinks.length; i++) {
 				randomized.add(i);
 			}
 			
-			// array is now randomized
+			// arraylist is now randomized
 			Collections.shuffle(randomized);
 			
 			ExecutorService executor = Executors.newFixedThreadPool(maxThreads);
@@ -113,28 +122,31 @@ public class ImageFinder extends HttpServlet{
 				executor.execute(worker);
 			}
 		
-			executor.shutdown();
-			
+			// cleaning up 
+			executor.shutdown();	
 			while (!executor.isTerminated()) {
 			}
-
 			System.out.println("\nFinished all threads");
 			executor.shutdownNow();
-			mainPageLinks = crawler.retMainURLs();
+
+
+			// updating urls 
+			mainPageURLs = crawler.retMainURLs();
 			subpageImageURL = crawler.retsubPageURLs();
 
 
 			// adding 0 to this will print all elements from the array
 			if (perMain != 0) 
-				mainPageLinks = Arrays.copyOf(mainPageLinks, perMain);
+				mainPageURLs = Arrays.copyOf(mainPageURLs, perMain);
 
 		}
 		catch (Exception e) {
 			//e.printStackTrace();
 		}
 
-		resp.getWriter().print(GSON.toJson(mainPageLinks));
-		//resp.getWriter().print(GSON.toJson(subpageImageURL));
+		// display images from the original URL
+		resp.getWriter().print(GSON.toJson(mainPageURLs));
+		
 		
 		
 	}
