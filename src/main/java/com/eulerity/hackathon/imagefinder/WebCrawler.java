@@ -8,8 +8,14 @@ import java.io.FileReader;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Random;
-import java.net.URI;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+
+import java.net.URI;
+import java.net.URL;
+
+import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -174,6 +180,23 @@ public class WebCrawler implements Runnable {
         return doc.title(); 
     } 
 
+    public boolean isImage( String url) {
+        try {
+            BufferedImage image = ImageIO.read (new URL(url));
+
+            if (image != null) 
+                return true;
+            else
+                return false;
+
+        }
+
+        catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        
+    }
   
 
 
@@ -285,14 +308,19 @@ public class WebCrawler implements Runnable {
         
             int random = generator.nextInt(threadLinks.size());
             String randomURL = hashset[random];
+            //Image io = ImageIO.read(new URL(randomURL));
 
             // get the element at random number index
             System.out.println("Random element: "
                             + randomURL);
             
-            // add random element to list 
-            if (! links.contains(randomURL) )
-                links.add(randomURL);
+            // add random element to list
+            synchronized (links) {
+             
+                if (! links.contains(randomURL) )
+                    links.add(randomURL);
+
+            }
                     
         }
     
