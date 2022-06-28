@@ -117,6 +117,7 @@ public class ImageFinder extends HttpServlet{
 				// create a thread to crawl random subpage
 				String subpage = subpageLinks[randomized.remove(0)].replaceAll("\"", "");
 				Runnable worker = crawler.retSubPageCrawler(subpage);
+				crawler.removeSubPage(subpage);
 				executor.execute(worker);
 
 			}

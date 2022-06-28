@@ -189,6 +189,11 @@ public class WebCrawler implements Runnable {
     } 
 
 
+    public void removeSubPage(String url) {
+        this.subpages.remove(url);
+    }
+
+
 
     /** 
      * @param   selector    html-selector that you want to parse for
@@ -289,9 +294,7 @@ public class WebCrawler implements Runnable {
      * while increasing diversity.
      */
     public void addFoundImages() {
-        if (! thread) throw new Error("NOT A THREAD");
-
-    
+        if (! thread) throw new Error("NOT A THREAD");    
         int images_allowed = this.threadLimit;
 
         // to prevent errors 
@@ -306,22 +309,15 @@ public class WebCrawler implements Runnable {
         Random generator;
 
         for (int i = images_allowed; i > 0; i--) {
-            generator = new Random();
-        
+            generator = new Random();        
             int random = generator.nextInt(threadLinks.size());
             String randomURL = hashset[random];
-            //Image io = ImageIO.read(new URL(randomURL));
-
-            // get the element at random number index
-            System.out.println("Random element: "
-                            + randomURL);
+            System.out.println("Random element: " + randomURL);
             
             // add random element to list
-            synchronized (subPageLinks) {
-             
+            synchronized (subPageLinks) { 
                 if (! subPageLinks.contains(randomURL) )
                     subPageLinks.add(randomURL);
-
             }
                     
         }
@@ -355,10 +351,11 @@ public class WebCrawler implements Runnable {
             writeJSON();
             getElementsHashed("img", "src");
             getElementsHashed("meta", "content");
-            bruteForceLinkSearch();
+            getElementsHashed("a", "href");
+            bruteSearchTwo(false, false);
             addFoundImages();
 
-            subpages.remove(this.url);
+            
             return;
         
         }
@@ -368,20 +365,21 @@ public class WebCrawler implements Runnable {
     }
     
 
+
+
     /*
         This is run by the initial WebCrawler, 
         which is the one that creates all of the threads.
     */
     public void getAllImageURLs() throws IOException {
-
-        writeJSON(); 
+        writeJSON();
         getElementsHashed("img", "src");
-        getElementsHashed("meta", "content");
-        bruteForceLinkSearch(); 
+        getElementsHashed("meta", "content"); 
         getElementsHashed("a", "href");
-        
-    }
-    
+        bruteSearchTwo(false, false); 
+    } 
+
+
 
 
     /**
@@ -500,6 +498,9 @@ public class WebCrawler implements Runnable {
         return false; 
     }
 
+
+
+
     /**
      * 
      * @param imgFormat         are results format specific?
@@ -547,7 +548,7 @@ public class WebCrawler implements Runnable {
 
                     // if user only wants image formats 
                     if (imgFormat) {
-                        if (hasImageFormat(s)) {
+                        if (hasImageFormat(sanitized)) {
                             System.out.println("Is an image");
                             added = true; 
                         }
@@ -559,7 +560,7 @@ public class WebCrawler implements Runnable {
                     
                     // if external sites are disallowed, skip external sites 
                     if (!externalSite) {
-                        if (s.contains(hostname)) {
+                        if (sanitized.contains(hostname)) {
                             added = true; 
                         }
                         else {
@@ -570,8 +571,8 @@ public class WebCrawler implements Runnable {
 
                     if (added == true) {
                         synchronized(links) {
-                            if (!links.contains(s)) {
-                                hashset.add(s); // varies depending on whether or not is thread
+                            if (!links.contains(sanitized)) {
+                                hashset.add(sanitized); // varies depending on whether or not is thread
                                 System.out.println("ADDED");
                             }      
                         }                            
@@ -616,7 +617,7 @@ public class WebCrawler implements Runnable {
                         continue;
                     }
                     _attribute = urlSanitize(_attribute); 
-
+                    
                     // adding it to appropriate hashset
                     synchronized(links) {
                         if (!links.contains(_attribute))
@@ -637,8 +638,10 @@ public class WebCrawler implements Runnable {
                
                 // links with same domain added are counted as subpages
                 if (_attribute.contains(domain)) {
+
+                    _attribute = _attribute.substring(_attribute.indexOf("https"));
                     subpages.add(_attribute);
-                    System.out.println("href= "+ _attribute);
+                    System.out.println("a tag= "+ _attribute);
                 }
                 
                 // relative paths are converted to absolute
