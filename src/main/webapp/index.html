@@ -99,23 +99,49 @@
 
 
 	<div class="content">
-		<div class="flexbox input">
+		<div class="input">
 			<form>
-				<input type="text" name="url">
-				<input type="text" name="# of subpages">
-				<input type="text" name="max images per thread">
+
+				<ul class="form-list">
+					<li class ="form-row">
+						<label for="url">URL</label>
+						<input type="text" name="url" id= "url" placeholder="site url">
+					</li>
+					<li class ="form-row">
+						<label for="threads ">Threads</label>
+						<input type="number" name="threads" id="threads" placeholder=3>
+					</li>
+					<li class ="form-row">
+						<label for="per_main">Max Images for Main Page</label>
+						<input type="number" name="per_main" id="per_main" placeholder=3>
+					</li>
+					<li class ="form-row">
+						<label for="per_thread">Images per Thread</label>
+						<input type="number" name="per_thread" id="per_thread" placeholder=3>
+					</li>
+					
+				</ul> 
+				
+
+
+
 			</form>
 			<button type="button">Submit!</button>
 		</div>
-		<div class="output">
+		
+	</div>
+
+	<div class="output">
 			<ul class="results">
 
 			</ul>
-		</div>
 	</div>
 	<script>
 		var resultList = document.querySelector('ul.results');
-		var urlInput = document.querySelector('input[name=url]')
+		var urlInput   = document.querySelector('input[name=url]');
+		var numThreads = document.querySelector('input[name=threads]');
+		var perMain    = document.querySelector('input[name=per_main]');
+		var perThread  = document.querySelector('input[name=per_thread]');
 
 		apiCallBack = function(xhr, callback) {
 			if (xhr.readyState == XMLHttpRequest.DONE) {
@@ -187,7 +213,7 @@
 			/*
 				located above 
 			*/
-			makeApiCall('/main?url=' + urlInput.value, 'POST', null, updateList);
+			makeApiCall('/main?url='+ urlInput.value, 'POST', null, updateList);
 		});
 	</script>
 </body>
