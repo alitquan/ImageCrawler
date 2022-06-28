@@ -180,7 +180,7 @@ public class WebCrawler implements Runnable {
         return doc.title(); 
     } 
 
-    public boolean isImage( String url) {
+    public static boolean isImage( String url) {
         try {
             BufferedImage image = ImageIO.read (new URL(url));
 
@@ -192,7 +192,7 @@ public class WebCrawler implements Runnable {
         }
 
         catch (Exception e) {
-            e.printStackTrace();
+            System.out.println ("\nError with url: " + url);
             return false;
         }
         
