@@ -35,10 +35,12 @@ public class WebCrawler implements Runnable {
     boolean thread;
     Document doc;
 
-    static HashSet <String> links;      // global image links a few false positives;
-    HashSet <String> extraLinks;        // css, js, misc
-    HashSet <String> subpages;          // absolute and relative paths
-    HashSet <String> threadLinks;       // image links gathered by individual thread 
+    static HashSet <String> links;       // global image links a few false positives;
+    static HashSet <String> subPageLinks;// stores subpage links that were randomized
+
+    HashSet <String> extraLinks;         // css, js, misc
+    HashSet <String> subpages;           // absolute and relative paths
+    HashSet <String> threadLinks;        // container for indiv. thread. Holds URLs
 
     int create_time= (int) System.currentTimeMillis();
 
@@ -64,6 +66,7 @@ public class WebCrawler implements Runnable {
         // no thread can (re) initialize this global 
         if (!this.thread) {
             links = new HashSet<String> ();
+            subPageLinks = new HashSet<String>(); 
         }
 
         //set-up
@@ -497,6 +500,9 @@ public class WebCrawler implements Runnable {
                     // adding it to appropriate hashset
                     synchronized(links) {
                         if (!links.contains(_attribute))
+
+                        // debugging 
+                        //System.out.println(_attribute);
                         hashset.add(_attribute); 
                     }
                 }
