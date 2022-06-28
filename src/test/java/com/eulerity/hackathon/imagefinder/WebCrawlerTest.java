@@ -70,16 +70,26 @@ public class WebCrawlerTest  {
 
     // }
 
-    // @Test
+    //@Test
     public void uniqueTest() throws Exception  {
         System.out.println("\n\n\n\n=========Testing URL crawl=========\n\n\n");
         test5 = new WebCrawler("https://allaboutcats.com/top-cat-blogs",false);
         test5.getElementsHashed("img", "src");
         test5.getElementsHashed("meta", "content"); 
         test5.getElementsHashed("a", "href");
-        test5.bruteSearchTwo(false, false); 
+        test5.writeJSON();
+        // test5.bruteSearchTwo(false, false); 
+    } 
+
+    //@Test
+    public void jsonDynamicTestTest() throws Exception  {
+        System.out.println("\n\n\n\n=========Testing Json Gather=========\n\n\n");
+        test5 = new WebCrawler("https://unsplash.com/photos/fIq0tET6llw",false); 
+        test5.writeJSON();
+        // test5.bruteSearchTwo(false, false); 
 
     } 
+
 
 
  

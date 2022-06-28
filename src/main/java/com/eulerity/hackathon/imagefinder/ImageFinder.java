@@ -112,7 +112,7 @@ public class ImageFinder extends HttpServlet{
 			//initial crawl gathers subpages 
 			crawler.getAllImageURLs();
 			mainPageURLs  = crawler.retMainURLs();
-			subpageLinks = crawler.retSubPagesAsArrays();
+			subpageLinks = crawler.retSubpageLinks();
 			
 
 			// an arraylist of random Integers 

@@ -27,23 +27,23 @@ import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 public class WebCrawler implements Runnable {
     String hostname,domain,url;
-    boolean thread;           // is this instance a thread?
-    static boolean externalSites,    // are external sites allowed?  
-                   fileOnly;         // are only image formats allowed (png,jpg,etc)?
+    boolean thread;                  // true if instance is a thread
+    static boolean externalSites,    // true if are external sites allowed  
+                   fileOnly;         // true if image formats are allowed (png,jpg,etc)
 
     Document doc;
 
-    static HashSet <String> links;       // global image links a few false positives;
-    static HashSet <String> subPageLinks;// stores subpage links that were randomized
+    static HashSet <String> globalImageURLs;   // global image urls a few false positives
+    static HashSet <String> subPageImageURLs;  // stores subpage urls gathered by threads
 
-    HashSet <String> extraLinks;         // css, js, misc
-    HashSet <String> subpages;           // absolute and relative paths
-    HashSet <String> threadLinks;        // container for indiv. thread. Holds URLs
+    HashSet <String> miscLinks;         // css, js, misc
+    HashSet <String> subpageLinks;      // absolute and relative paths
+    HashSet <String> threadLinks;       // container for indiv. thread. Holds URLs
 
-    static int threadLimit = 0;                // max number of images a thread can obtain  
+    static int threadLimit = 0;                         // max number of images a thread can obtain  
     int create_time= (int) System.currentTimeMillis();  // for creating unique file names
 
-    // resource folders. cleaned out using pom.xml configuration
+    // resource folders. gets cleaned out using pom.xml configuration
     final String resources_path = "resources/", 
                  xml_output     = resources_path + "output" + create_time +".txt",
                 json_output    = resources_path + "json_output"+ create_time + ".txt";
@@ -52,28 +52,31 @@ public class WebCrawler implements Runnable {
 
 
     /** 
-     * @param   depth   how many subpages that you want to go through 
-     * @param   url     URL address where crawler will be initiated
-     *                  ideally will be the home page
+     * @param   url         URL address where crawler will be initiated
+     *                      ideally will be the home pag
+     * @param   is_thread   true if this instance is a thread
      * 
-     * HTMLunit was actually designed for testing functionality and validity of 
-     * javascript code. It throws errors whenever something unoptimal is detected, 
-     * with respect to the efficacy of the JavaScript code. 
+     * Depending on the value of @param is_thread , this Constructor
+     * can determine whether or not a given instance is a thread.
+     * Setting the class variable @thread to true will allow the 
+     * thread to use the run method. The threads use static variables
+     * to make sure that the same URL is never recorded. Synchronization
+     * helps with this. 
      */
     public WebCrawler(String _url, boolean is_thread) throws Exception {
         this.url = _url; 
         this.thread = is_thread;
 
-        // no thread can (re) initialize this global 
+        // threads cannot reinitialzie static variables
         if (!this.thread) {
-            links = new HashSet<String> ();
-            subPageLinks = new HashSet<String>(); 
+            globalImageURLs = new HashSet<String> ();
+            subPageImageURLs = new HashSet<String>(); 
         }
 
         //set-up
         threadLinks = new HashSet<String> ();
-        extraLinks = new HashSet <String> ();
-        subpages = new HashSet<String>();
+        miscLinks = new HashSet <String> ();
+        subpageLinks = new HashSet<String>();
         URI uri = new URI(url);
         domain = uri.getScheme() + "://" + uri.getHost();
         hostname = domain.startsWith("www.") ? domain.substring(4) : domain;  
@@ -118,18 +121,105 @@ public class WebCrawler implements Runnable {
 
 
 
-    // sets the thread limit 
+    /** @limit sets the maximum number of url procurred by a thread */
     public void setThreadLimit(int limit) {
-        this.threadLimit = limit;
+        threadLimit = limit;
     }
 
+    /** if @param bool is true, external urls are allowed  */
     public void setExternal(boolean bool) {
-        this.externalSites = bool;
+        externalSites = bool;
     }
 
+
+    /** if @param bool is true, all URLs must include an image foormat */
     public void setMandatoryFormat(boolean bool) {
-        this.fileOnly = bool;
+        fileOnly = bool;
     }
+
+
+     // prints out the file 
+    public String getTitle() {
+        return doc.title(); 
+    } 
+
+    // useful after thread is done crawling a page 
+    public void removeSubPage(String url) {
+        this.subpageLinks.remove(url);
+    }
+
+
+
+    /** 
+     * @param   selector    html-selector that you want to parse for
+     * Testing method. Delete later
+     */
+    public Elements getElements(String selector) {
+        return doc.select(selector);
+    }
+
+
+    
+    // prints length of global HashSet    
+    public int getLinksLength() {
+        return globalImageURLs.size();
+    }
+
+
+
+    
+
+    
+    
+    /**
+     * Will return the appropriate hashset (global or thread-local)
+     * Threads cannot directly add to the global URL hashset.
+     * It can consume too much RAM.
+     * Instead, URLS that threads crawl will be saved to their own
+     * HashSet. A random assortment will be selected and added to the static
+     * hashset.
+     * @return      if a thread is running this, the thread's individual URL hashset
+     *              otherwise, the global hashset will be returned
+     * 
+     * @see addFoundImages to know see how each Thread's local hashset is eventually
+     *                     integrated into the global hashset 
+     */
+    public HashSet <String> getHashSet() {
+        if (this.thread) 
+            return this.threadLinks;
+        else 
+            return globalImageURLs;
+    }
+
+
+
+
+
+
+    public String [] hashSetToArray( HashSet <String> hs) { 
+        String retArr[] = new String [hs.size()];
+        int i = 0;
+        for (String url: hs) {
+            retArr[i++] = url;
+        }
+        return retArr;
+    }
+
+    public String [] retMainURLs() {
+        return hashSetToArray(globalImageURLs); 
+    }
+
+    public String [] retsubPageURLs() {
+         return hashSetToArray(subPageImageURLs);  
+    }
+
+    public String [] retSubpageLinks() {
+         return hashSetToArray(subpageLinks); 
+    }
+
+
+ 
+    
 
 
     /**
@@ -141,29 +231,12 @@ public class WebCrawler implements Runnable {
             return new WebCrawler(url, true);
         }
         catch (Exception e){
-            System.out.println("*************retSubPageCrawler************");
+            System.out.println("invalid subpage");
             return null;
         }
 
     }
-    
-    
-    /**
-     * Will return the appropriate hashset.
-     * Threads cannot directly add to the global URL hashset.
-     * It can consume too much RAM
-     * Instead, URLS that threads crawl will be saved to their own
-     * HashSet. A random number will be selected and added to the global
-     * hashset.
-     * @return      if a thread is running this, the thread's individual URL hashset
-     *              otherwise, the global hashset will be returned
-     */
-    public HashSet <String> getHashSet() {
-        if (this.thread) 
-            return this.threadLinks;
-        else 
-            return links;
-    }
+
 
 
     // cleanup 
@@ -185,110 +258,11 @@ public class WebCrawler implements Runnable {
     }
 
 
-    // prints out the file 
-    public String getTitle() {
-        return doc.title(); 
-    } 
-
-
-    public void removeSubPage(String url) {
-        this.subpages.remove(url);
-    }
-
-
-
-    /** 
-     * @param   selector    html-selector that you want to parse for
-     * Testing method. Delete later
-     */
-    public Elements getElements(String selector) {
-        return doc.select(selector);
-    }
-
-
-    
-    // prints length of global HashSet    
-    public int getLinksLength() {
-        return links.size();
-    }
-
-
-
-
-    /**
-     * @return      global url HashSet, but in array form
-     */
-    public String [] retMainURLs() {
-
-        String retArr[] = new String [links.size()];
-        int i = 0;
-        for (String url: links) {
-            retArr[i++] = url;
-        }
-        return retArr;
-
-    }
-
-    /**
-     * @return      global url HashSet, but in array form
-     */
-    public String [] retsubPageURLs() {
-
-        String retArr[] = new String [subPageLinks.size()];
-        int i = 0;
-        for (String url: subPageLinks) {
-            retArr[i++] = url;
-        }
-        return retArr;
-
-    }
-
-
-    /**
-     * @return  global subpage url hashset, but in array form
-     */
-    public String [] retSubPagesAsArrays() {
-
-        String retArr[] = new String [subpages.size()];
-        int i = 0;
-        for (String url: subpages) {
-            retArr[i++] = url;
-        }
-        return retArr;
-    }
-
-
- 
-    /**
-     * @param s url with invalid characters
-     * @return  sanitized version of @param s 
-     */
-    public String urlSanitize(String s) {
-
-        if (s.contains("/>")) {
-            s = s.replace("/>","");
-        }
-        if (s.contains ("\">")){
-            s = s.replace ("\">","");
-        }
-        if (s.contains("\"")) {
-            s = s.replace ("\"","");
-        }
-        if (s.contains("{")) {
-            s = s.replace ("{","");
-        }
-        if (s.contains("}")) {
-            s = s.replace ("}","");
-        }
-        return s; 
-    }
-
-
 
     /**
      * This can only be run by threads. 
      * It adds a random assortment of image URLS 
-     * collected from the subpages that threads 
+     * collected from the subpageLinks that threads 
      * have been designated to crawl. 
      * 
      * This random assortment is added to the global
@@ -317,27 +291,42 @@ public class WebCrawler implements Runnable {
             System.out.println("Random element: " + randomURL);
             
             // add random element to list
-            synchronized (subPageLinks) { 
-                if (! subPageLinks.contains(randomURL) )
-                    subPageLinks.add(randomURL);
+            synchronized (subPageImageURLs) { 
+                if (! subPageImageURLs.contains(randomURL) )
+                    subPageImageURLs.add(randomURL);
             }
                     
-        }
-    
+        }    
 
     }
 
 
 
 
+    /*
+        This is run by the initial WebCrawler, 
+        which is the one that creates all of the threads.
+    */
+    public void getAllImageURLs() throws IOException {
+        writeJSON();
+        getElementsHashed("img", "src");
+        getElementsHashed("meta", "content"); 
+        getElementsHashed("a", "href");
+        bruteSearch(fileOnly, externalSites); 
+    } 
+
+
+
+
     /**
-     *  Thread behavior is different from a normal 
-     *  WebCrawler. It does not gather any more URLs.
+     *  Web Crawlers that use this @run method scour
+     *  subpages saved by the WebCrawler that crawled
+     *  the original page. 
      * 
-     *  Threads also have their own HashSet. They add
-     *  image URLs found on their respective subpages.
-     *  Using 'addfoundImages()', they add an arbitrary
-     *  number of these URLs to the master hashset
+     *  They save resources to their own HashSet 
+     *  before randomly choosing an assortment and 
+     *  adding it to the global HashSet of potential
+     *  URLs. 
      */
     public void run()  {
         if (! thread) { 
@@ -354,7 +343,7 @@ public class WebCrawler implements Runnable {
             getElementsHashed("img", "src");
             getElementsHashed("meta", "content");
             getElementsHashed("a", "href");
-            bruteSearchTwo(true, externalSites);
+            bruteSearch(true, externalSites);
             addFoundImages();            
             return;
         
@@ -367,27 +356,15 @@ public class WebCrawler implements Runnable {
 
 
 
-    /*
-        This is run by the initial WebCrawler, 
-        which is the one that creates all of the threads.
-    */
-    public void getAllImageURLs() throws IOException {
-        writeJSON();
-        getElementsHashed("img", "src");
-        getElementsHashed("meta", "content"); 
-        getElementsHashed("a", "href");
-        bruteSearchTwo(fileOnly, externalSites); 
-    } 
-
-
+    
 
 
 
     public static boolean  hasImageFormat(String url) {
         String _url = url.toLowerCase();
-        if (_url.contains(".jpg") |
-            _url.contains(".png") | 
-            _url.contains(".jpeg")
+        if (_url.contains("jpg") |
+            _url.contains("png") | 
+            _url.contains("jpeg")
         ) return true;
 
         return false; 
@@ -395,15 +372,49 @@ public class WebCrawler implements Runnable {
 
 
 
+
+    /**
+     * @param s url with invalid characters
+     * @return  sanitized version of @param s 
+     */
+    public String urlSanitize(String s) {
+
+        if (s.contains("/>")) {
+            s = s.replace("/>","");
+        }
+        if (s.contains ("\">")){
+            s = s.replace ("\">","");
+        }
+        if (s.contains("\"")) {
+            s = s.replace ("\"","");
+        }
+        if (s.contains("{")) {
+            s = s.replace ("{","");
+        }
+        if (s.contains("}")) {
+            s = s.replace ("}","");
+        }
+        return s; 
+    }
+
+
+
+    /**
+     * 
+     * @param url       an image url that is being filtered out
+     *                  because it may not meet requirements
+     * @return          yes if it is a desired url
+     */
     public boolean legalEntry(String url) {
+
+        if (url.contains("gif"))
+            return false;
 
          // if user only wants image formats 
         if (fileOnly) {
             if (! hasImageFormat(url))
                 return false; 
         }
-
-        
         // if external sites are disallowed, skip external sites 
         if (!externalSites) {
             if (!url.contains(hostname)) 
@@ -417,18 +428,17 @@ public class WebCrawler implements Runnable {
 
     /**
      * 
-     * @param imgFormat         are urls only allowed to contain image formats?
-     * @param externalSite      are external sites allowed ?  
+     * @param imgFormat         true if only certain image formats are allowed
+     * @param externalSite      true if external sites are allowed  
      */
-    public void bruteSearchTwo(boolean imgFormat, boolean externalSite) {
+    public void bruteSearch(boolean imgFormat, boolean externalSite) {
         String target = "https://",
                line   = "",
                unSanitized,
                sanitized;
         String [] splitLine= new String []{};
-        String [] formatURLs = new String[]{};
         
-        // will determine whether to save it to global links or links for the thread
+        // returns or thread-local 
         HashSet <String> hashset = getHashSet();
         BufferedReader reader = null;  
 
@@ -447,7 +457,7 @@ public class WebCrawler implements Runnable {
                          unSanitized = s.substring(s.indexOf("https"));
                          sanitized = urlSanitize(unSanitized); 
 
-                         if (this.subpages.contains(sanitized) || this.extraLinks.contains(sanitized)) {
+                         if (this.subpageLinks.contains(sanitized) || this.miscLinks.contains(sanitized)) {
                              System.out.println("Extra");
                              continue; 
                          }
@@ -456,12 +466,11 @@ public class WebCrawler implements Runnable {
                         //  System.out.println("Sanitized: " + sanitized);
                     }
                     else { continue; }
-
-                   
+  
 
                     if (legalEntry(sanitized) == true) {
-                        synchronized(links) {
-                            if (!links.contains(sanitized)) {
+                        synchronized(globalImageURLs) {
+                            if (!globalImageURLs.contains(sanitized)) {
                                 hashset.add(sanitized); 
                                 System.out.println("ADDED");
                             }      
@@ -509,8 +518,8 @@ public class WebCrawler implements Runnable {
                     _attribute = urlSanitize(_attribute); 
                     
                     // adding it to appropriate hashset
-                    synchronized(links) {
-                        if (!links.contains(_attribute))
+                    synchronized(globalImageURLs) {
+                        if (!globalImageURLs.contains(_attribute))
 
                         // debugging 
                         //System.out.println(_attribute);
@@ -518,19 +527,19 @@ public class WebCrawler implements Runnable {
                     }
                 }
                 else {
-                    extraLinks.add(_attribute);
+                    miscLinks.add(_attribute);
                 }
             }
 
 
-            // getting subpages --- only relative paths with no php scripts 
+            // getting subpageLinks --- only relative paths with no php scripts 
             else if (selector.equals("a") ) {
                
-                // links with same domain added are counted as subpages
+                // globalImageURLs with same domain added are counted as subpageLinks
                 if (_attribute.contains(domain)) {
 
                     _attribute = _attribute.substring(_attribute.indexOf("https"));
-                    subpages.add(_attribute);
+                    subpageLinks.add(_attribute);
                     System.out.println("a tag= "+ _attribute);
                 }
                 
@@ -541,7 +550,7 @@ public class WebCrawler implements Runnable {
                    !_attribute.contains("php?") ){
 
 
-                        subpages.add(domain+_attribute);
+                        subpageLinks.add(domain+_attribute);
                 }
                 
             }
@@ -578,6 +587,7 @@ public class WebCrawler implements Runnable {
 
             reader= new BufferedReader(new FileReader(xml_output));
             String line, key, value,retVal="";
+            HashSet appropriateHashSet = getHashSet();
 
             while ((line = reader.readLine()) != null) {  
 
@@ -590,23 +600,39 @@ public class WebCrawler implements Runnable {
                 if (line.substring(0, target.length()).equals(target) && line.length() > 5000) {
                     String unescape = line.replaceAll("\\\\"+"\"", "");
                     String [] unescapeSplit = unescape.split(",");
-                    for (String s: unescapeSplit) {
-                        retVal+= "\n" + s;
-                       
-                        // breaks up JSON records and stores urls, which contain images
-                        if (s.contains(":") & s.contains("url")) {
-                            key = s.substring(0, s.indexOf(":"));
-                            value = s.substring(s.indexOf(":")+1, s.length());
-                            if (value.contains("http")){
-                                if (value.contains(",")) {
-                                    continue;
-                                }
-                                value = urlSanitize(value); 
+                    
+                    for (String group: unescapeSplit) {
+                        String [] commaSplit = group.split("\"");
+                        for (String member: commaSplit) {
 
-                                if (legalEntry(value))
-                                    links.add(value.substring(value.indexOf("http")));
+                            retVal+= "\n" + member;
+                            if (member.contains("http")) {
+                                key = member.substring(member.indexOf("http"));
+                                key = urlSanitize(key);
+                                System.out.println(key);
+                                if (legalEntry(key))
+                                    globalImageURLs.add(key.substring(key.indexOf("http")));
+
                             }
+                           
+
                         }
+                            
+                       
+                        // // breaks up JSON records and stores urls, which contain images
+                        // if (s.contains(":") & s.contains("url")) {
+                        //     key = s.substring(0, s.indexOf(":"));
+                        //     value = s.substring(s.indexOf(":")+1, s.length());
+                        //     if (value.contains("http")){
+                        //         if (value.contains(",")) {
+                        //             continue;
+                        //         }
+                        //         value = urlSanitize(value); 
+
+                        //         if (legalEntry(value))
+                        //             globalImageURLs.add(value.substring(value.indexOf("http")));
+                        //     }
+                        // }
                     }
                 }
             }
