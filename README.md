@@ -1,4 +1,4 @@
-# <redacted> Hackathon Challenge
+# (Redacted)  Hackathon Challenge
 Congratulations on making it to this stage of <redacted>'s interview process! In this folder is a project for a partially built web application whose goal is to crawl a provided URL and pick out the images from it. This README will provide more information about the goals of the project, its structure, and setup and submission instructions.
 
 ## ImageFinder Goal
