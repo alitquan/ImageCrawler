@@ -1,78 +1,174 @@
 <html>
 <head>
+	<link rel="stylesheet" href="./main.css"> </link>
+
 </head>
 <body>
-	<h1>Eulerity Take-Home Challenge</h1>
+	<div class ="explanation flexbox">
 
-	<h2>How it works</h2>
-	<ul>
-		<li>Pressing the submit button on this page will make a POST
-			request to /main</li>
-		<li>That request will contain a form parameter with the url
-			populated in the input box below</li>
-		<li>The ImageFinder servlet will respond to the request with a
-			list of image urls</li>
-		<li>This page contains javascript to send the request and use the
-			response to build a list of images</li>
-	</ul>
-	<h2>Backend Developers</h2>
-	<ul>
-		<li>You can update the ImageFinder servlet to add crawling logic</li>
-		<li>Feel free to add as many classes/packages/files/third party
-			libraries as you'd like</li>
-		<li>We recommend JSoup for parsing web pages</li>
-		<li>You can update this page's html/css/style if you plan on
-			improving the interface</li>
-		<li>Your final submission does not need to contain any of the
-			files included herein</li>
-		<li>This project is just skeleton code so you can hit the ground
-			running.</li>
-		<li>Some ideas:
-			<ul>
-			<li>Crawl not only the given url, but other pages in the same domain</li>
-			<li>Make your crawler multithreaded to speed up response times</li>
-			<li>Be a friendly crawler and try not to hammer a site</li>
-			<li>Think about how to identify different classes of images and do they need special handling</li>
-			<li>Can you identify images as logos? Perhaps collect favicons?</li>
-			<li>Can you mark images that contain people?</li>
-			</ul>
-		</li>
-	</ul>
-	<h2>Important Notes</h2>
-	<p>Congratulations on making it this far into the interview
-		process!</p>
-	<p>
-	This is a free-form hackathon for a very important reason. We wish to see what ideas you can bring to the table.
-	</p>
-	<p><strong>If your submission only contains 5-10 lines of new code, please think twice about submitting it.</strong> If you need more time, you can ask for it.
-	</p>
-	<p>
-	You can use one of the ideas above, but feel free to go off and build something completely different. 
-	The important thing is to submit something that highlights your strengths as a developer.
-	</p>
-	<p>
-	  <b>Remember, this is your chance to show off how you can best contribute to our team.</b>
-	</p>
-	<p>Please remember to think about good design and code style. Comments in your code are great, but thought should also be taken in how to name your variables and method.</p>
+		<h1>Eulerity Take-Home Challenge</h1>
 
+		<h2>How it works</h2>
+		<ul>
+
+			<li>Pressing the submit button on this page will make a POST
+				request to /main</li>
+			<li>That request will contain a form parameter with the url
+				populated in the input box below</li>
+			<li>The ImageFinder servlet will respond to the request with a
+				list of image urls</li>
+			<li>This page contains javascript to send the request and use the
+				response to build a list of images</li>
+			<li>The JavaServlet creates an initial webcrawler called
+				<b> crawler </b>that loads the  entire HTML page using a package 
+				called 'htmlunit' 
+				<ul>
+					<li><b>htmlunit</b> uses a class called 
+						<b>WebClient</b> to encompass the html page after all 
+						of the JavaScript on the respective page is ran. This 
+						allows images to be collected from more complex and 
+						dynamic pages. 
+					</li> 
+					<li> WebClient  was created to troubleshoot JS-code. In This
+						application, I won't be using that functionality. So I 
+						suppressed all related warnings to lower clutter. 
+					</li>
+					<li><b>To minimize the number of accesses </b> 
+						to the site, the WebClient stores the html page 
+						using an xml format and writes it to the 
+						<i>Resources/output[unique#].txt</i> file. 
+					</li>
+					<li><b>pom.xml</b> has been configured to clear this directory 
+						whenever <b> mvn clean </b> is ran. 
+					</li>
+					<li> 
+						The xml is parsed. The method <b>writeJSON</b> is used 
+						to locate any JSON generated via dynamic webpages and stores
+						it to: 
+						<i>Resources/json_output[unique#].txt</i>
+					</li>
+					<li>
+						Otherwise, the xml is parsed for any common image-related tags via
+						the method <b>getElementsHashed()</b>, and also parsed for any 
+						files beginning with "https://" (this is done via <b>bruteForceLinkSearch</b>
+					</li>
+					<li> 
+						During the parsing of the xml file, potential subpages are also added 
+						to another HashSet, <b>subpages</b>. 
+					</li>
+				</ul>
+			
+			</li>
+			
+			<li>The JavaServlet uses <b> crawler </b> and its HashSet <b> links </b> to create
+				a concurrent threadpool of smaller webcrawlers. These smaller webcrawlers
+				do not add further subpages. This behavior is specified in the <b>run</b>
+				method, since WebCrawler implements <b>Runnable</b> <br/>
+
+				<ul>
+					<li> The resulting threads also do not directly add the set of subpages </li>
+					<li> They crawl through the subpages and add URLs to a thread-specific hashet</li>
+					<li> At the end of <b>run</b> this thread adds a number of random elements to
+						the global HashSet </li>
+					<li> After all the threads are run, the thread pool is shut down</li> 
+				</ul>
+
+			</li>
+		<h2> Shortcomings </h2>	
+		<ul> 
+			<li> 
+				However, there are still a few blind spots that I need to address: 
+				<ul>
+					<li> How can I prevent two identical images, or extremely similar (perhaps
+						one may be blurred) from appearing?
+					</li>
+					<li> 
+						While my WebCrawler does manage to crawl some dynamic web pages, 
+						it cannot crawl others. This is because people write their JS
+						scripts differently, sometimes formatting the JSON differently. 
+					</li>
+					<li> 
+						How do I reduce the number of false positives (URLs that aren't images) 
+						without increasing the number of false negatives (URLS without image
+						format types that still display images)
+					</li>
+				</ul>
+			</li>
+		</ul>
+		</ul>
+    </div>
 
 
 	<div class="content">
 		<div class="input">
 			<form>
-				<input type="text" name="url">
+
+				<ul class="form-list">
+					<li class ="form-row">
+						<label for="url">URL</label>
+						<input type="text" name="url" id= "url" placeholder="site url">
+					</li>
+					<li class ="form-row">
+						<label for="threads ">Threads</label>
+						<input type="number" name="threads" id="threads" placeholder=3>
+					</li>
+					<li class ="form-row">
+						<label for="per_main">Max Images for Main Page</label>
+						<input type="number" name="per_main" id="per_main" placeholder=3>
+					</li>
+					<li class ="form-row">
+						<label for="per_thread">Images per Thread</label>
+						<input type="number" name="per_thread" id="per_thread" placeholder=3>
+					</li>
+					<li class ="form-row">
+						<label for="external">External Websites allowed?? </label>
+						<input type="checkbox" id="external" name="external" value="allowExt">
+					</li>
+					<li class ="form-row">
+						<label for="image_files">Image Files Only? </label>
+						<input type="checkbox" id="image_files" name="image_files" value="formatted">
+					</li>
+					
+				</ul> 
+				
+
+
+
 			</form>
-			<button type="button">Submit!</button>
+			<button id = "main-page-submit" type="button">Get Images from URL!</button>
+			<button id = "subpage-submit" type="button">Get Images from URL's subpages!</button>
 		</div>
-		<div class="output">
-			<ul class="results">
+		
+	</div>
+
+	<div class="main-output">
+			<ul class="main-results">
 
 			</ul>
-		</div>
 	</div>
+
+	<div id="subpage-output">
+			<div id="subpage-button-container"> 
+			
+			</div>
+			
+			<ul class="subpage-results">
+				
+			</ul>
+	</div>
+
+
 	<script>
-		var resultList = document.querySelector('ul.results');
-		var urlInput = document.querySelector('input[name=url]')
+		var resultList = document.querySelector('ul.main-results');
+		var subpageList= document.querySelector('ul.subpage-results');
+		var subpages = false;
+
+		var urlInput   = document.querySelector('input[name=url]');
+		var numThreads = document.querySelector('input[name=threads]');
+		var perMain    = document.querySelector('input[name=per_main]');
+		var perThread  = document.querySelector('input[name=per_thread]');
+		var external   = document.querySelector('input[name=external]');
+		var imgOnly    = document.querySelector('input[name=image_files]');
 
 		apiCallBack = function(xhr, callback) {
 			if (xhr.readyState == XMLHttpRequest.DONE) {
@@ -82,6 +178,7 @@
 					alert(message);
 					throw 'API call returned bad code: ' + xhr.status;
 				}
+
 				let response = xhr.responseText ? JSON.parse(xhr.responseText)
 						: null;
 				if (callback) {
@@ -100,17 +197,80 @@
 			}
 		}
 
+		/**
+		@param	url	-- makes call to routing defined in servlet
+		@param	method -- GET or POST 
+		@param  obj
+
+		*/
 		makeApiCall = function(url, method, obj, callback) {
 			let xhr = new XMLHttpRequest();
 			xhr.open(method, url);
 			xhr.onreadystatechange = apiCallBack.bind(null, xhr, callback);
-			xhr.send(obj ? obj instanceof FormData || obj.constructor == String ? obj : JSON.stringify(obj) : null);
+
+			xhr.send
+					(obj ? 
+					
+					obj instanceof FormData || obj.constructor == String 
+						? 
+						obj : JSON.stringify(obj) 
+					: null);
 		}
 
-		document.querySelector('button').addEventListener("click", function(event) {
+
+
+		document.getElementById('main-page-submit').addEventListener("click", function(event) {
 			event.preventDefault();
-			makeApiCall('/main?url=' + urlInput.value, 'POST', null, updateList);
+			
+			console.log(subpages); 
+			console.log(numThreads.value);
+
+			var _urlInput   = urlInput.value;
+			var _numThreads = numThreads.value;
+			var _perMain    = perMain.value;
+			var _perThread  = perThread.value;
+			var _external =	 external.checked; 
+			var _imgOnly  =  imgOnly.checked;
+
+			if(	! _urlInput || 	! _numThreads ||
+				! _perMain  ||  ! _perThread  ) {
+					window.alert("Please fill out each form. Default values are recommended"); 
+					return;
+			}
+
+			if (_numThreads < 0 || _perMain < 0 || _perThread < 0){ 
+					window.alert ("No negative numbers please");
+					return;
+			}
+
+			subpages = true;
+
+			makeApiCall('/main?url=' + urlInput.value
+						+ '&threads=' + numThreads.value 
+						+ '&permain=' + perMain.value 
+						+ '&perthread=' + perThread.value 
+					 	+ '&extImg=' + _external
+						+ '&imgOnly=' + _imgOnly
+						, 'POST', null , updateList);
+
+			
 		});
+
+
+
+		document.getElementById('subpage-submit').addEventListener("click", function(event) {
+			event.preventDefault();
+
+			if (! subpages) {
+				window.alert("You need to crawl the primary page first");
+			} 
+
+			makeApiCall('/main?render_subpage=' + subpages,'POST', null , updateList);
+			console.log("See if it is true" + subpages);
+
+			
+		});
+
 	</script>
 </body>
 
